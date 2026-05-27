@@ -1,0 +1,30 @@
+aws_region  = "ap-northeast-2"
+project     = "baro"
+environment = "dev"
+
+# Restrict this to your IP in real dev environments.
+allowed_http_cidrs = ["0.0.0.0/0"]
+
+# CI pushes :latest by default and forces a new ECS deployment.
+image_tag = "latest"
+
+service_desired_count = 1
+service_cpu           = 512
+service_memory        = 1024
+
+rds_instance_class    = "db.t4g.micro"
+rds_engine_version    = "16"
+rds_allocated_storage = 20
+rds_database_name     = "baro"
+rds_master_username   = "baroadmin"
+
+# Start small: create only user-service first.
+# Add more later, for example: ["user", "dispatch", "relocation", "control"]
+enabled_services = ["user"]
+
+# Optional plain environment overrides, by service key: control, dispatch, relocation, user.
+service_environment = {
+  control = {
+    # DISPATCH_SERVICE_URL is modeled as a secret by default.
+  }
+}
