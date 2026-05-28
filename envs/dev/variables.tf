@@ -65,13 +65,22 @@ variable "service_memory" {
 }
 
 variable "enabled_services" {
-  description = "Services to create in dev. Start with user only, then add dispatch, relocation, control later."
+  description = "Services to create in dev."
   type        = set(string)
-  default     = ["user"]
+  default     = ["user", "dispatch"]
 
   validation {
     condition     = alltrue([for service in var.enabled_services : contains(["control", "dispatch", "relocation", "user"], service)])
     error_message = "enabled_services must contain only: control, dispatch, relocation, user."
+  }
+}
+
+variable "service_desired_counts" {
+  description = "Optional desired task count override by service. Use 0 while bootstrapping a new service image/secrets."
+  type        = map(number)
+  default = {
+    user     = 1
+    dispatch = 0
   }
 }
 

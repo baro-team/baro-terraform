@@ -112,6 +112,27 @@ resource "aws_secretsmanager_secret_version" "user_db_password" {
   secret_string = random_password.rds_master.result
 }
 
+resource "aws_secretsmanager_secret_version" "dispatch_db_url" {
+  count = contains(var.enabled_services, "dispatch") ? 1 : 0
+
+  secret_id     = aws_secretsmanager_secret.service["dispatch/DISPATCH_DB_URL"].id
+  secret_string = "jdbc:postgresql://${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${aws_db_instance.postgres.db_name}?currentSchema=dispatch_service"
+}
+
+resource "aws_secretsmanager_secret_version" "dispatch_db_username" {
+  count = contains(var.enabled_services, "dispatch") ? 1 : 0
+
+  secret_id     = aws_secretsmanager_secret.service["dispatch/DISPATCH_DB_USERNAME"].id
+  secret_string = aws_db_instance.postgres.username
+}
+
+resource "aws_secretsmanager_secret_version" "dispatch_db_password" {
+  count = contains(var.enabled_services, "dispatch") ? 1 : 0
+
+  secret_id     = aws_secretsmanager_secret.service["dispatch/DISPATCH_DB_PASSWORD"].id
+  secret_string = random_password.rds_master.result
+}
+
 resource "aws_cloudwatch_log_group" "db_init" {
   name              = "/ecs/${local.name_prefix}/db-init"
   retention_in_days = 14

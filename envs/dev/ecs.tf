@@ -77,7 +77,7 @@ resource "aws_ecs_service" "service" {
   name            = "${local.name_prefix}-${each.value.module}"
   cluster         = aws_ecs_cluster.this.id
   task_definition = aws_ecs_task_definition.service[each.key].arn
-  desired_count   = var.service_desired_count
+  desired_count   = lookup(var.service_desired_counts, each.key, var.service_desired_count)
   launch_type     = "FARGATE"
 
   deployment_minimum_healthy_percent = 0

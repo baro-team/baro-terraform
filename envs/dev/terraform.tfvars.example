@@ -18,9 +18,14 @@ rds_allocated_storage = 20
 rds_database_name     = "baro"
 rds_master_username   = "baroadmin"
 
-# Start small: create only user-service first.
+# Start with user-service running and dispatch-service infrastructure prepared.
 # Add more later, for example: ["user", "dispatch", "relocation", "control"]
-enabled_services = ["user"]
+enabled_services = ["user", "dispatch"]
+
+service_desired_counts = {
+  user     = 1
+  dispatch = 0
+}
 
 # Optional plain environment overrides, by service key: control, dispatch, relocation, user.
 service_environment = {

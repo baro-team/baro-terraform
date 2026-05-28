@@ -30,15 +30,18 @@ locals {
     }
 
     dispatch = {
-      module            = "dispatch-service"
-      container_port    = 8082
-      path_patterns     = ["/dispatch", "/dispatch/*"]
-      extra_environment = {}
+      module         = "dispatch-service"
+      container_port = 8082
+      path_patterns  = ["/dispatch", "/dispatch/*"]
+      extra_environment = {
+        SPRING_JPA_HIBERNATE_DDL_AUTO = "update"
+      }
       secret_names = [
         "DISPATCH_DB_URL",
         "DISPATCH_DB_USERNAME",
         "DISPATCH_DB_PASSWORD",
-        "JWT_SECRET"
+        "JWT_SECRET",
+        "KAKAO_MOBILITY_API_KEY"
       ]
     }
 

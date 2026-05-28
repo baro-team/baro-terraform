@@ -15,7 +15,7 @@ The initial dev environment creates:
 - CloudWatch log groups
 - Secrets Manager entries for service secrets
 
-The dev environment starts with `user-service` only. Add the other services later by changing `enabled_services`.
+The dev environment runs `user-service` and prepares `dispatch-service` infrastructure with desired count `0` until its image and secrets are ready.
 
 Available services:
 
@@ -36,17 +36,19 @@ terraform plan
 terraform apply
 ```
 
-Bootstrap note: on the very first apply, ECR images and secret values may not exist yet.
-If you want to avoid failing ECS tasks during bootstrap, set `service_desired_count = 0`,
-apply the infrastructure, push images and populate secrets, then set it back to `1` and apply again.
+Bootstrap note: when adding a new service, keep its desired count at `0`, apply the infrastructure, push the image and populate secrets, then set its desired count to `1` and apply again.
 
-## User-service first path
+## User and dispatch bootstrap path
 
 Keep this in `envs/dev/terraform.tfvars`:
 
 ```hcl
-enabled_services      = ["user"]
-service_desired_count = 0
+enabled_services = ["user", "dispatch"]
+
+service_desired_counts = {
+  user     = 1
+  dispatch = 0
+}
 ```
 
 Then run:
@@ -65,6 +67,19 @@ You only need to populate the user JWT secret manually:
 
 ```bash
 aws secretsmanager put-secret-value --secret-id baro-dev/user/JWT_SECRET --secret-string 'at-least-32-bytes-secret-value'
+```
+
+Terraform also fills these dispatch-service DB secrets from the same RDS instance:
+
+- `baro-dev/dispatch/DISPATCH_DB_URL`
+- `baro-dev/dispatch/DISPATCH_DB_USERNAME`
+- `baro-dev/dispatch/DISPATCH_DB_PASSWORD`
+
+Populate these dispatch-service secrets manually before setting dispatch desired count to `1`:
+
+```bash
+aws secretsmanager put-secret-value --secret-id baro-dev/dispatch/JWT_SECRET --secret-string '...'
+aws secretsmanager put-secret-value --secret-id baro-dev/dispatch/KAKAO_MOBILITY_API_KEY --secret-string '...'
 ```
 
 Create the four PostgreSQL schemas by running the one-off ECS task after `terraform apply`:
@@ -109,10 +124,13 @@ jdbc:postgresql://RDS_ENDPOINT:5432/baro?currentSchema=dispatch_service
 
 This is different from an Aurora/RDS cluster with multiple DB instances. A multi-instance DB cluster is mainly for high availability/read scaling and costs more. For dev and early deployment, one RDS instance with schemas is simpler.
 
-After the image is pushed, set:
+After the dispatch image is pushed and secrets are populated, set:
 
 ```hcl
-service_desired_count = 1
+service_desired_counts = {
+  user     = 1
+  dispatch = 1
+}
 ```
 
 and apply again.
@@ -144,11 +162,13 @@ encrypt        = true
 
 ## Required secret values
 
-For the initial user-service deployment, Terraform fills the DB secrets from RDS.
-Populate only the JWT secret manually:
+For user-service and dispatch-service, Terraform fills the DB secrets from RDS.
+Populate app-level secrets manually:
 
 ```bash
 aws secretsmanager put-secret-value --secret-id baro-dev/user/JWT_SECRET --secret-string '...'
+aws secretsmanager put-secret-value --secret-id baro-dev/dispatch/JWT_SECRET --secret-string '...'
+aws secretsmanager put-secret-value --secret-id baro-dev/dispatch/KAKAO_MOBILITY_API_KEY --secret-string '...'
 ```
 
 See `terraform output secret_names` for the created service secrets.
@@ -156,7 +176,7 @@ See `terraform output secret_names` for the created service secrets.
 ## CI/CD prerequisites
 
 The `baro-server` repository contains `.github/workflows/deploy-dev-ecs.yml`.
-For now it deploys `user-service` only.
+For now it deploys `user-service` and `dispatch-service`.
 It expects this GitHub Actions secret:
 
 - `AWS_ACCESS_KEY_ID`

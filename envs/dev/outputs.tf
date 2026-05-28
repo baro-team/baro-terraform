@@ -38,6 +38,11 @@ output "user_service_jdbc_url" {
   value       = "jdbc:postgresql://${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${aws_db_instance.postgres.db_name}?currentSchema=user_service"
 }
 
+output "dispatch_service_jdbc_url" {
+  description = "JDBC URL automatically stored in baro-dev/dispatch/DISPATCH_DB_URL."
+  value       = "jdbc:postgresql://${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${aws_db_instance.postgres.db_name}?currentSchema=dispatch_service"
+}
+
 output "db_init_task_definition_arn" {
   description = "Run this one-off ECS task after apply to create PostgreSQL schemas."
   value       = aws_ecs_task_definition.db_init.arn
