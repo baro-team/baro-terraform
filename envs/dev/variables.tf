@@ -76,11 +76,11 @@ variable "enabled_services" {
 }
 
 variable "service_desired_counts" {
-  description = "Optional desired task count override by service. Use 0 while bootstrapping a new service image/secrets."
+  description = "Desired task count by service."
   type        = map(number)
   default = {
     user     = 1
-    dispatch = 0
+    dispatch = 1
   }
 }
 

@@ -24,7 +24,7 @@ enabled_services = ["user", "dispatch"]
 
 service_desired_counts = {
   user     = 1
-  dispatch = 0
+  dispatch = 1
 }
 
 # Optional plain environment overrides, by service key: control, dispatch, relocation, user.

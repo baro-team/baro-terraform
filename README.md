@@ -52,7 +52,7 @@ enabled_services = ["user", "dispatch"]
 
 service_desired_counts = {
   user     = 1
-  dispatch = 0
+  dispatch = 1
 }
 ```
 
@@ -204,9 +204,8 @@ GitHub OIDC is recommended later, but access keys are simpler for the first dev 
 This repository contains `.github/workflows/terraform-dev.yml`.
 
 - Pull requests run `terraform fmt`, `init`, `validate`, and `plan`.
-- Pushes to `main` run the same checks and `terraform plan`.
+- Pushes to `main` run the same checks and then `terraform apply`.
 - Manual runs are available via `workflow_dispatch` with `plan`, `apply`, and `destroy` actions.
-- Manual runs can set `user_desired_count` and `dispatch_desired_count` without local Terraform commands.
 - Manual `destroy` requires `confirm_destroy=destroy-dev`.
 
 Terraform owns ECS task definitions and service task definition revisions. The application deploy workflow pushes `:latest` images and forces a new ECS deployment; Terraform apply is still required when task environment variables or secrets change.

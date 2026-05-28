@@ -28,14 +28,6 @@ on:
         description: Type destroy-dev to allow destroy
         required: false
         default: ""
-      user_desired_count:
-        description: Desired count for user-service
-        required: true
-        default: "1"
-      dispatch_desired_count:
-        description: Desired count for dispatch-service
-        required: true
-        default: "0"
 
 permissions:
   contents: read
@@ -85,20 +77,16 @@ jobs:
 
       - name: Terraform plan
         if: github.event_name != 'workflow_dispatch' || inputs.action != 'destroy'
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            terraform plan -no-color -out=tfplan \
-              -var='service_desired_counts={"user"=${{ inputs.user_desired_count }},"dispatch"=${{ inputs.dispatch_desired_count }}}'
-          else
-            terraform plan -no-color -out=tfplan
-          fi
+        run: terraform plan -no-color -out=tfplan
 
       - name: Terraform destroy plan
         if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy'
         run: terraform plan -destroy -no-color -out=tfplan
 
       - name: Terraform apply
-        if: github.event_name == 'workflow_dispatch' && inputs.action == 'apply'
+        if: >-
+          (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+          (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')
         run: terraform apply -auto-approve -no-color tfplan
 
       - name: Terraform destroy
