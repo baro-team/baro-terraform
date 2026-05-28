@@ -52,12 +52,20 @@ resource "aws_ecs_task_definition" "service" {
         }
       ]
 
-      secrets = [
-        for secret_name in each.value.secret_names : {
-          name      = secret_name
-          valueFrom = aws_secretsmanager_secret.service["${each.key}/${secret_name}"].arn
-        }
-      ]
+      secrets = concat(
+        [
+          for secret_name in each.value.secret_names : {
+            name      = secret_name
+            valueFrom = aws_secretsmanager_secret.service["${each.key}/${secret_name}"].arn
+          }
+        ],
+        each.key == "dispatch" ? [
+          {
+            name      = "JWT_SECRET"
+            valueFrom = aws_secretsmanager_secret.service["user/JWT_SECRET"].arn
+          }
+        ] : []
+      )
 
       logConfiguration = {
         logDriver = "awslogs"

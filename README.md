@@ -75,10 +75,10 @@ Terraform also fills these dispatch-service DB secrets from the same RDS instanc
 - `baro-dev/dispatch/DISPATCH_DB_USERNAME`
 - `baro-dev/dispatch/DISPATCH_DB_PASSWORD`
 
-Populate these dispatch-service secrets manually before setting dispatch desired count to `1`:
+Dispatch-service reuses `baro-dev/user/JWT_SECRET`, so you do not need a separate dispatch JWT secret.
+Populate the Kakao Mobility API key manually in AWS Secrets Manager before setting dispatch desired count to `1`:
 
 ```bash
-aws secretsmanager put-secret-value --secret-id baro-dev/dispatch/JWT_SECRET --secret-string '...'
 aws secretsmanager put-secret-value --secret-id baro-dev/dispatch/KAKAO_MOBILITY_API_KEY --secret-string '...'
 ```
 
@@ -167,8 +167,13 @@ Populate app-level secrets manually:
 
 ```bash
 aws secretsmanager put-secret-value --secret-id baro-dev/user/JWT_SECRET --secret-string '...'
-aws secretsmanager put-secret-value --secret-id baro-dev/dispatch/JWT_SECRET --secret-string '...'
 aws secretsmanager put-secret-value --secret-id baro-dev/dispatch/KAKAO_MOBILITY_API_KEY --secret-string '...'
+```
+
+If you do not want to use local AWS CLI, put these values in AWS Console:
+
+```text
+AWS Console → Secrets Manager → Secrets → secret name → Retrieve/Update secret value
 ```
 
 See `terraform output secret_names` for the created service secrets.
@@ -194,8 +199,9 @@ GitHub OIDC is recommended later, but access keys are simpler for the first dev 
 This repository contains `.github/workflows/terraform-dev.yml`.
 
 - Pull requests run `terraform fmt`, `init`, `validate`, and `plan`.
-- Pushes to `main` run the same checks and then `terraform apply`.
+- Pushes to `main` run the same checks and `terraform plan`.
 - Manual runs are available via `workflow_dispatch` with `plan`, `apply`, and `destroy` actions.
+- Manual runs can set `user_desired_count` and `dispatch_desired_count` without local Terraform commands.
 - Manual `destroy` requires `confirm_destroy=destroy-dev`.
 
 Configure these repository secrets in `baro-terraform`:

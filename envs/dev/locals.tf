@@ -40,7 +40,6 @@ locals {
         "DISPATCH_DB_URL",
         "DISPATCH_DB_USERNAME",
         "DISPATCH_DB_PASSWORD",
-        "JWT_SECRET",
         "KAKAO_MOBILITY_API_KEY"
       ]
     }
