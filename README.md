@@ -168,3 +168,19 @@ The IAM user needs permissions for:
 - ECS `UpdateService`/`DescribeServices` on the `baro-dev` cluster
 
 GitHub OIDC is recommended later, but access keys are simpler for the first dev deployment.
+
+## Terraform GitHub Actions
+
+This repository contains `.github/workflows/terraform-dev.yml`.
+
+- Pull requests run `terraform fmt`, `init`, `validate`, and `plan`.
+- Pushes to `main` run the same checks and then `terraform apply`.
+- Manual runs are available via `workflow_dispatch` with `plan`, `apply`, and `destroy` actions.
+- Manual `destroy` requires `confirm_destroy=destroy-dev`.
+
+Configure these repository secrets in `baro-terraform`:
+
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+
+The workflow uses the dev S3 backend configured in `envs/dev/backend.hcl.example`.
