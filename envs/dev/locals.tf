@@ -35,6 +35,8 @@ locals {
       path_patterns  = ["/dispatch", "/dispatch/*"]
       extra_environment = {
         SPRING_JPA_HIBERNATE_DDL_AUTO = "update"
+        SPRINGDOC_API_DOCS_PATH       = "/dispatch/api-docs"
+        SPRINGDOC_SWAGGER_UI_PATH     = "/dispatch/swagger-ui.html"
       }
       secret_names = [
         "DISPATCH_DB_URL",

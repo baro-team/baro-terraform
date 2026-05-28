@@ -28,6 +28,11 @@ Available services:
 
 ## Usage
 
+Dev Swagger URLs:
+
+- User: `http://baro-dev-1701378146.ap-northeast-2.elb.amazonaws.com/swagger-ui.html`
+- Dispatch: `http://baro-dev-1701378146.ap-northeast-2.elb.amazonaws.com/dispatch/swagger-ui.html`
+
 ```bash
 cd envs/dev
 cp terraform.tfvars.example terraform.tfvars
