@@ -132,6 +132,16 @@ For remote state, create the S3 bucket/DynamoDB table first and initialize with:
 terraform init -backend-config=backend.hcl
 ```
 
+Dev currently uses this remote backend:
+
+```hcl
+bucket         = "baro-dev-terraform-state-379992420279"
+key            = "baro/dev/terraform.tfstate"
+region         = "ap-northeast-2"
+dynamodb_table = "baro-dev-terraform-locks"
+encrypt        = true
+```
+
 ## Required secret values
 
 For the initial user-service deployment, Terraform fills the DB secrets from RDS.
