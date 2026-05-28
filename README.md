@@ -209,6 +209,8 @@ This repository contains `.github/workflows/terraform-dev.yml`.
 - Manual runs can set `user_desired_count` and `dispatch_desired_count` without local Terraform commands.
 - Manual `destroy` requires `confirm_destroy=destroy-dev`.
 
+Terraform owns ECS task definitions and service task definition revisions. The application deploy workflow pushes `:latest` images and forces a new ECS deployment; Terraform apply is still required when task environment variables or secrets change.
+
 Configure these repository secrets in `baro-terraform`:
 
 - `AWS_ACCESS_KEY_ID`

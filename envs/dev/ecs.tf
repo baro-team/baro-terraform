@@ -104,9 +104,5 @@ resource "aws_ecs_service" "service" {
     container_port   = each.value.container_port
   }
 
-  lifecycle {
-    ignore_changes = [task_definition]
-  }
-
   depends_on = [aws_lb_listener.http]
 }
