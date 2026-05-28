@@ -24,7 +24,7 @@ Available services:
 | `control` | `control-service` | 8081 | `/control*` |
 | `dispatch` | `dispatch-service` | 8082 | `/dispatch*` |
 | `relocation` | `relocation-service` | 8083 | `/relocation*` |
-| `user` | `user-service` | 8084 | `/users*`, `/user*` |
+| `user` | `user-service` | 8084 | `/auth*`, `/users*`, `/swagger-ui*`, `/api-docs*` |
 
 ## Usage
 

@@ -53,7 +53,7 @@ locals {
     user = {
       module         = "user-service"
       container_port = 8084
-      path_patterns  = ["/users", "/users/*", "/user", "/user/*"]
+      path_patterns  = ["/auth", "/auth/*", "/users", "/users/*"]
       extra_environment = {
         JWT_ACCESS_TOKEN_EXPIRATION_SECONDS  = "3600"
         JWT_REFRESH_TOKEN_EXPIRATION_SECONDS = "1209600"
