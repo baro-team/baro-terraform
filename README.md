@@ -80,14 +80,32 @@ Workflow 파일:
 - `AWS_ACCESS_KEY_ID`
 - `AWS_SECRET_ACCESS_KEY`
 
-수동 `destroy`는 안전장치가 있습니다.
+수동 `destroy`는 안전장치가 있습니다. 기본 destroy 범위는 비용이 큰 실행 리소스만 내리는 `runtime`입니다.
 
 ```text
 action = destroy
+destroy_scope = runtime
 confirm_destroy = destroy-dev
 ```
 
-`confirm_destroy` 값이 정확하지 않으면 destroy는 실패합니다.
+`runtime` destroy는 아래 리소스를 삭제 대상으로 잡고, VPC/Subnets/ECR/서비스 Secret placeholder는 남깁니다.
+
+- ECS cluster/services/task definitions
+- ALB/listener/rules/target groups
+- NAT Gateway/EIP/private route table
+- RDS instance/DB subnet group/RDS security group/RDS secret versions
+- ECS task IAM roles
+- CloudWatch log groups
+
+전체 dev stack을 삭제해야 할 때만 `all` 범위를 사용합니다.
+
+```text
+action = destroy
+destroy_scope = all
+confirm_destroy = destroy-dev-all
+```
+
+`confirm_destroy` 값이 destroy 범위와 정확히 맞지 않으면 destroy plan 전에 실패합니다.
 
 ## Remote state
 
@@ -114,6 +132,51 @@ AWS_PROFILE=baro-dev AWS_REGION=ap-northeast-2 terraform plan
 ```
 
 로컬에서 `terraform apply`는 가급적 사용하지 않습니다.
+
+### 로컬 runtime destroy plan이 필요할 때
+
+GitHub Actions의 `destroy_scope = runtime`과 같은 범위를 로컬에서 미리 확인하려면 아래처럼 `-target`을 사용합니다. 실제 삭제 전에는 반드시 plan 결과를 확인합니다.
+
+```bash
+cd envs/dev
+terraform plan -destroy \
+  -target=aws_route_table_association.private \
+  -target=aws_route_table.private \
+  -target=aws_nat_gateway.this \
+  -target=aws_eip.nat \
+  -target=aws_ecs_service.service \
+  -target=aws_ecs_task_definition.service \
+  -target=aws_ecs_cluster.this \
+  -target=aws_cloudwatch_log_group.service \
+  -target=aws_ecs_task_definition.db_init \
+  -target=aws_cloudwatch_log_group.db_init \
+  -target=aws_lb_listener_rule.user_docs \
+  -target=aws_lb_listener_rule.service \
+  -target=aws_lb_listener.http \
+  -target=aws_lb_target_group.service \
+  -target=aws_lb.this \
+  -target=aws_security_group_rule.alb_to_tasks \
+  -target=aws_security_group.alb \
+  -target=aws_security_group.ecs_tasks \
+  -target=aws_db_instance.postgres \
+  -target=aws_db_subnet_group.this \
+  -target=aws_security_group.rds \
+  -target=random_password.rds_master \
+  -target=aws_secretsmanager_secret.rds_master \
+  -target=aws_secretsmanager_secret_version.rds_master \
+  -target=aws_secretsmanager_secret_version.user_db_url \
+  -target=aws_secretsmanager_secret_version.user_db_username \
+  -target=aws_secretsmanager_secret_version.user_db_password \
+  -target=aws_secretsmanager_secret_version.dispatch_db_url \
+  -target=aws_secretsmanager_secret_version.dispatch_db_username \
+  -target=aws_secretsmanager_secret_version.dispatch_db_password \
+  -target=aws_iam_role_policy_attachment.ecs_task_execution \
+  -target=aws_iam_role_policy.ecs_task_execution_secrets \
+  -target=aws_iam_role.ecs_task_execution \
+  -target=aws_iam_role.ecs_task
+```
+
+장기적으로는 ECR/Secrets 같은 보존 리소스와 ECS/ALB/RDS/NAT 같은 실행 리소스를 별도 root module/state로 분리하는 것이 가장 안전합니다.
 
 ## RDS layout
 
