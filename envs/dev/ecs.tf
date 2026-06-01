@@ -120,7 +120,7 @@ resource "aws_ecs_task_definition" "kafka" {
         { name = "KAFKA_NODE_ID", value = "1" },
         { name = "KAFKA_PROCESS_ROLES", value = "broker,controller" },
         { name = "KAFKA_LISTENERS", value = "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093" },
-        { name = "KAFKA_ADVERTISED_LISTENERS", value = "PLAINTEXT://kafka.baro.internal:9092" },
+        { name = "KAFKA_ADVERTISED_LISTENERS", value = "PLAINTEXT://kafka.${aws_service_discovery_private_dns_namespace.this.name}:9092" },
         { name = "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP", value = "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT" },
         { name = "KAFKA_INTER_BROKER_LISTENER_NAME", value = "PLAINTEXT" },
         { name = "KAFKA_CONTROLLER_LISTENER_NAMES", value = "CONTROLLER" },
