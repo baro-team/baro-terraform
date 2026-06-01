@@ -78,8 +78,7 @@ resource "aws_lb_listener_rule" "user_docs" {
         "/swagger-ui/*",
         "/api-docs",
         "/api-docs/*",
-        "/v3/api-docs",
-        "/v3/api-docs/*",
+        "/v3/api-docs*",
       ]
     }
   }
