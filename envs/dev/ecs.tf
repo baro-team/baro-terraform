@@ -117,19 +117,19 @@ resource "aws_ecs_task_definition" "kafka" {
       ]
 
       environment = [
-        { name = "KAFKA_NODE_ID",                                    value = "1" },
-        { name = "KAFKA_PROCESS_ROLES",                              value = "broker,controller" },
-        { name = "KAFKA_LISTENERS",                                  value = "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093" },
-        { name = "KAFKA_ADVERTISED_LISTENERS",                       value = "PLAINTEXT://kafka.baro.internal:9092" },
-        { name = "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP",             value = "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT" },
-        { name = "KAFKA_INTER_BROKER_LISTENER_NAME",                 value = "PLAINTEXT" },
-        { name = "KAFKA_CONTROLLER_LISTENER_NAMES",                  value = "CONTROLLER" },
-        { name = "KAFKA_CONTROLLER_QUORUM_VOTERS",                   value = "1@localhost:9093" },
-        { name = "KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR",           value = "1" },
-        { name = "KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR",   value = "1" },
-        { name = "KAFKA_TRANSACTION_STATE_LOG_MIN_ISR",              value = "1" },
-        { name = "CLUSTER_ID",                                       value = "MkU3OEVBNTcwNTJENDM2Qk" },
-        { name = "KAFKA_LOG_DIRS",                                   value = "/var/kafka-data" }
+        { name = "KAFKA_NODE_ID", value = "1" },
+        { name = "KAFKA_PROCESS_ROLES", value = "broker,controller" },
+        { name = "KAFKA_LISTENERS", value = "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093" },
+        { name = "KAFKA_ADVERTISED_LISTENERS", value = "PLAINTEXT://kafka.baro.internal:9092" },
+        { name = "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP", value = "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT" },
+        { name = "KAFKA_INTER_BROKER_LISTENER_NAME", value = "PLAINTEXT" },
+        { name = "KAFKA_CONTROLLER_LISTENER_NAMES", value = "CONTROLLER" },
+        { name = "KAFKA_CONTROLLER_QUORUM_VOTERS", value = "1@localhost:9093" },
+        { name = "KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR", value = "1" },
+        { name = "KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR", value = "1" },
+        { name = "KAFKA_TRANSACTION_STATE_LOG_MIN_ISR", value = "1" },
+        { name = "CLUSTER_ID", value = "MkU3OEVBNTcwNTJENDM2Qk" },
+        { name = "KAFKA_LOG_DIRS", value = "/var/kafka-data" }
       ]
 
       mountPoints = [
