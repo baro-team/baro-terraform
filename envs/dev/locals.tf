@@ -10,9 +10,10 @@ locals {
 
   all_services = {
     control = {
-      module         = "control-service"
-      container_port = 8081
-      path_patterns  = ["/control", "/control/*"]
+      module            = "control-service"
+      container_port    = 8081
+      path_patterns     = ["/control", "/control/*"]
+      health_check_path = "/actuator/health"
       extra_environment = {
         MQTT_MODE               = "aws"
         IOT_ENDPOINT            = "a7xnpqbtrafiw-ats.iot.ap-northeast-2.amazonaws.com"
@@ -27,9 +28,10 @@ locals {
     }
 
     dispatch = {
-      module         = "dispatch-service"
-      container_port = 8082
-      path_patterns  = ["/dispatch", "/dispatch/*"]
+      module            = "dispatch-service"
+      container_port    = 8082
+      path_patterns     = ["/dispatch", "/dispatch/*"]
+      health_check_path = "/actuator/health"
       extra_environment = {
         SPRING_JPA_HIBERNATE_DDL_AUTO = "update"
         SPRINGDOC_API_DOCS_PATH       = "/dispatch/api-docs"
@@ -47,14 +49,16 @@ locals {
       module            = "relocation-service"
       container_port    = 8083
       path_patterns     = ["/relocation", "/relocation/*"]
+      health_check_path = "/actuator/health"
       extra_environment = {}
       secret_names      = []
     }
 
     user = {
-      module         = "user-service"
-      container_port = 8084
-      path_patterns  = ["/user", "/user/*"]
+      module            = "user-service"
+      container_port    = 8084
+      path_patterns     = ["/user", "/user/*"]
+      health_check_path = "/actuator/health"
       extra_environment = {
         JWT_ACCESS_TOKEN_EXPIRATION_SECONDS  = "3600"
         JWT_REFRESH_TOKEN_EXPIRATION_SECONDS = "1209600"

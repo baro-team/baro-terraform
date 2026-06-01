@@ -17,8 +17,8 @@ resource "aws_lb_target_group" "service" {
 
   health_check {
     enabled             = true
-    path                = "/actuator/health"
-    matcher             = "200-499"
+    path                = each.value.health_check_path
+    matcher             = "200"
     interval            = 30
     timeout             = 5
     healthy_threshold   = 2
