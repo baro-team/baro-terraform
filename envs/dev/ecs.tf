@@ -108,7 +108,7 @@ resource "aws_ecs_task_definition" "kafka" {
   container_definitions = jsonencode([
     {
       name      = "kafka"
-      image     = "${aws_ecr_repository.kafka.repository_url}:${var.image_tag}"
+      image     = "${data.aws_ecr_repository.kafka.repository_url}:${var.image_tag}"
       essential = true
 
       portMappings = [
