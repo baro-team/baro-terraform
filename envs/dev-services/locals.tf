@@ -5,7 +5,7 @@ locals {
     Project     = var.project
     Environment = var.environment
     ManagedBy   = "terraform"
-    Layer       = "runtime"
+    Layer       = "services"
   }
 
   shared = data.terraform_remote_state.shared.outputs

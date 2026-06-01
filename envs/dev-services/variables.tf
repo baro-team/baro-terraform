@@ -1,5 +1,5 @@
 variable "aws_region" {
-  description = "AWS region for dev runtime resources."
+  description = "AWS region for dev service resources."
   type        = string
   default     = "ap-northeast-2"
 }
@@ -47,7 +47,7 @@ variable "service_memory" {
 }
 
 variable "enabled_services" {
-  description = "Services to create in dev runtime. Must match dev-shared enabled_services."
+  description = "Services to create in dev services. Must match dev-shared enabled_services."
   type        = set(string)
   default     = ["user", "dispatch"]
 

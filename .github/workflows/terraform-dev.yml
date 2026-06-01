@@ -4,7 +4,7 @@ on:
   pull_request:
     paths:
       - envs/dev-shared/**
-      - envs/dev-runtime/**
+      - envs/dev-services/**
       - .github/workflows/terraform-dev.yml
       - README.md
   push:
@@ -12,7 +12,7 @@ on:
       - main
     paths:
       - envs/dev-shared/**
-      - envs/dev-runtime/**
+      - envs/dev-services/**
       - .github/workflows/terraform-dev.yml
       - README.md
   workflow_dispatch:
@@ -29,14 +29,14 @@ on:
       stack:
         description: Terraform stack to run
         required: true
-        default: runtime
+        default: services
         type: choice
         options:
           - shared
-          - runtime
+          - services
           - all
       confirm_destroy:
-        description: Type destroy-dev-runtime for runtime destroy or destroy-dev-all for all destroy
+        description: Type destroy-dev-services for services destroy or destroy-dev-all for all destroy
         required: false
         default: ""
 
@@ -68,7 +68,7 @@ jobs:
           CONFIRM_DESTROY: ${{ inputs.confirm_destroy }}
         run: |
           case "$STACK" in
-            runtime) expected="destroy-dev-runtime" ;;
+            services) expected="destroy-dev-services" ;;
             all) expected="destroy-dev-all" ;;
             shared) echo "Standalone shared destroy is disabled. Use stack=all after reviewing the plan."; exit 1 ;;
             *) echo "Invalid stack: $STACK"; exit 1 ;;
@@ -94,7 +94,7 @@ jobs:
 
       - name: Check dev-shared state exists
         id: shared_state
-        if: github.event_name != 'workflow_dispatch' || inputs.stack == 'runtime' || inputs.stack == 'all'
+        if: github.event_name != 'workflow_dispatch' || inputs.stack == 'services' || inputs.stack == 'all'
         run: |
           if aws s3api head-object \
             --bucket baro-dev-terraform-state-379992420279 \
@@ -103,11 +103,11 @@ jobs:
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "dev-shared state does not exist yet; skipping runtime plan until shared is bootstrapped."
+            echo "dev-shared state does not exist yet; skipping services plan until shared is bootstrapped."
           fi
 
       - name: Terraform fmt
-        run: terraform fmt -check -recursive envs/dev-shared envs/dev-runtime
+        run: terraform fmt -check -recursive envs/dev-shared envs/dev-services
 
       - name: Terraform shared init
         if: github.event_name != 'workflow_dispatch' || inputs.stack == 'shared' || inputs.stack == 'all'
@@ -119,14 +119,14 @@ jobs:
         working-directory: envs/dev-shared
         run: terraform validate
 
-      - name: Terraform runtime init
-        if: github.event_name != 'workflow_dispatch' || inputs.stack == 'runtime' || inputs.stack == 'all'
-        working-directory: envs/dev-runtime
+      - name: Terraform services init
+        if: github.event_name != 'workflow_dispatch' || inputs.stack == 'services' || inputs.stack == 'all'
+        working-directory: envs/dev-services
         run: terraform init -backend-config=backend.hcl.example
 
-      - name: Terraform runtime validate
-        if: github.event_name != 'workflow_dispatch' || inputs.stack == 'runtime' || inputs.stack == 'all'
-        working-directory: envs/dev-runtime
+      - name: Terraform services validate
+        if: github.event_name != 'workflow_dispatch' || inputs.stack == 'services' || inputs.stack == 'all'
+        working-directory: envs/dev-services
         run: terraform validate
 
       - name: Terraform shared plan
@@ -137,13 +137,13 @@ jobs:
         working-directory: envs/dev-shared
         run: terraform plan -no-color
 
-      - name: Terraform runtime plan
+      - name: Terraform services plan
         if: >-
           steps.shared_state.outputs.exists == 'true' &&
           (github.event_name == 'pull_request' ||
           github.event_name == 'push' ||
-          (github.event_name == 'workflow_dispatch' && inputs.action == 'plan' && (inputs.stack == 'runtime' || inputs.stack == 'all')))
-        working-directory: envs/dev-runtime
+          (github.event_name == 'workflow_dispatch' && inputs.action == 'plan' && (inputs.stack == 'services' || inputs.stack == 'all')))
+        working-directory: envs/dev-services
         run: terraform plan -no-color
 
       - name: Terraform shared apply
@@ -151,19 +151,19 @@ jobs:
         working-directory: envs/dev-shared
         run: terraform apply -auto-approve -no-color
 
-      - name: Terraform runtime apply
-        if: github.event_name == 'workflow_dispatch' && inputs.action == 'apply' && (inputs.stack == 'runtime' || inputs.stack == 'all')
-        working-directory: envs/dev-runtime
+      - name: Terraform services apply
+        if: github.event_name == 'workflow_dispatch' && inputs.action == 'apply' && (inputs.stack == 'services' || inputs.stack == 'all')
+        working-directory: envs/dev-services
         run: terraform apply -auto-approve -no-color
 
-      - name: Terraform runtime destroy plan
-        if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy' && (inputs.stack == 'runtime' || inputs.stack == 'all')
-        working-directory: envs/dev-runtime
+      - name: Terraform services destroy plan
+        if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy' && (inputs.stack == 'services' || inputs.stack == 'all')
+        working-directory: envs/dev-services
         run: terraform plan -destroy -no-color -out=tfplan
 
-      - name: Terraform runtime destroy
-        if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy' && (inputs.stack == 'runtime' || inputs.stack == 'all')
-        working-directory: envs/dev-runtime
+      - name: Terraform services destroy
+        if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy' && (inputs.stack == 'services' || inputs.stack == 'all')
+        working-directory: envs/dev-services
         run: terraform apply -auto-approve -no-color tfplan
 
       - name: Terraform shared destroy plan
