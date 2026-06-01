@@ -1,5 +1,6 @@
 locals {
-  name_prefix = "${var.project}-${var.environment}"
+  name_prefix     = "${var.project}-${var.environment}"
+  app_domain_name = var.app_domain_name != "" ? var.app_domain_name : "${var.environment}.${var.domain_name}"
 
   common_tags = {
     Project     = var.project
@@ -9,10 +10,11 @@ locals {
 
   all_services = {
     control = {
-      module         = "control-service"
-      container_port = 8081
-      priority       = 100
-      path_patterns  = ["/control", "/control/*"]
+      module            = "control-service"
+      container_port    = 8081
+      priority          = 100
+      path_patterns     = ["/control", "/control/*"]
+      health_check_path = "/actuator/health"
       extra_environment = {
         MQTT_MODE               = "aws"
         IOT_ENDPOINT            = "a7xnpqbtrafiw-ats.iot.ap-northeast-2.amazonaws.com"
@@ -27,10 +29,11 @@ locals {
     }
 
     dispatch = {
-      module         = "dispatch-service"
-      container_port = 8082
-      priority       = 101
-      path_patterns  = ["/dispatch", "/dispatch/*"]
+      module            = "dispatch-service"
+      container_port    = 8082
+      priority          = 101
+      path_patterns     = ["/dispatch", "/dispatch/*"]
+      health_check_path = "/actuator/health"
       extra_environment = {
         SPRING_JPA_HIBERNATE_DDL_AUTO = "update"
         SPRINGDOC_API_DOCS_PATH       = "/dispatch/api-docs"
@@ -49,21 +52,23 @@ locals {
       container_port    = 8083
       priority          = 103
       path_patterns     = ["/relocation", "/relocation/*"]
+      health_check_path = "/actuator/health"
       extra_environment = {}
       secret_names      = []
     }
 
     user = {
-      module         = "user-service"
-      container_port = 8084
-      priority       = 102
-      path_patterns  = ["/auth", "/auth/*", "/users", "/users/*"]
+      module            = "user-service"
+      container_port    = 8084
+      priority          = 102
+      path_patterns     = ["/user", "/user/*"]
+      health_check_path = "/actuator/health"
       extra_environment = {
         JWT_ACCESS_TOKEN_EXPIRATION_SECONDS  = "3600"
         JWT_REFRESH_TOKEN_EXPIRATION_SECONDS = "1209600"
         SPRING_JPA_HIBERNATE_DDL_AUTO        = "update"
-        SPRINGDOC_API_DOCS_PATH              = "/api-docs"
-        SPRINGDOC_SWAGGER_UI_PATH            = "/swagger-ui.html"
+        SPRINGDOC_API_DOCS_PATH              = "/user/api-docs"
+        SPRINGDOC_SWAGGER_UI_PATH            = "/user/swagger-ui.html"
       }
       secret_names = [
         "USER_DB_URL",

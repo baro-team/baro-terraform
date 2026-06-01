@@ -11,6 +11,14 @@ resource "aws_security_group" "alb" {
     cidr_blocks = var.allowed_http_cidrs
   }
 
+  ingress {
+    description = "HTTPS"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = var.allowed_http_cidrs
+  }
+
   egress {
     from_port   = 0
     to_port     = 0

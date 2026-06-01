@@ -40,6 +40,18 @@ variable "allowed_http_cidrs" {
   default     = ["0.0.0.0/0"]
 }
 
+variable "domain_name" {
+  description = "Route 53 hosted zone domain name for dev ALB alias records."
+  type        = string
+  default     = "barocloud.com"
+}
+
+variable "app_domain_name" {
+  description = "Fully qualified domain name for the dev ALB. Defaults to <environment>.<domain_name>."
+  type        = string
+  default     = ""
+}
+
 variable "image_tag" {
   description = "Container image tag deployed by Terraform. CI also pushes latest and forces ECS deployment."
   type        = string

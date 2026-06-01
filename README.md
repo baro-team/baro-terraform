@@ -11,7 +11,8 @@
 - ECR repositories
 - ECS cluster and Fargate services
 - Single private RDS PostgreSQL instance
-- Public ALB with path-based routing
+- Public ALB with HTTPS and path-based routing
+- Route 53 alias and ACM certificate for `dev.barocloud.com`
 - CloudWatch log groups
 - Secrets Manager entries
 
@@ -32,20 +33,20 @@
 | `control` | `control-service` | 8081 | `/control*` |
 | `dispatch` | `dispatch-service` | 8082 | `/dispatch*` |
 | `relocation` | `relocation-service` | 8083 | `/relocation*` |
-| `user` | `user-service` | 8084 | `/auth*`, `/users*`, `/swagger-ui*`, `/api-docs*` |
+| `user` | `user-service` | 8084 | `/user*` |
 
 ## Dev URLs
 
 Swagger URLs:
 
-- User: `http://baro-dev-1701378146.ap-northeast-2.elb.amazonaws.com/swagger-ui.html`
-- Dispatch: `http://baro-dev-1701378146.ap-northeast-2.elb.amazonaws.com/dispatch/swagger-ui.html`
+- User: `https://dev.barocloud.com/user/swagger-ui.html`
+- Dispatch: `https://dev.barocloud.com/dispatch/swagger-ui.html`
 
 Service base URLs:
 
-- User auth: `http://baro-dev-1701378146.ap-northeast-2.elb.amazonaws.com/auth`
-- User: `http://baro-dev-1701378146.ap-northeast-2.elb.amazonaws.com/users`
-- Dispatch: `http://baro-dev-1701378146.ap-northeast-2.elb.amazonaws.com/dispatch`
+- User auth: `https://dev.barocloud.com/user/auth`
+- User: `https://dev.barocloud.com/user/users`
+- Dispatch: `https://dev.barocloud.com/dispatch`
 
 ## 운영 방식
 
@@ -150,8 +151,8 @@ terraform plan -destroy \
   -target=aws_cloudwatch_log_group.service \
   -target=aws_ecs_task_definition.db_init \
   -target=aws_cloudwatch_log_group.db_init \
-  -target=aws_lb_listener_rule.user_docs \
   -target=aws_lb_listener_rule.service \
+  -target=aws_lb_listener.https \
   -target=aws_lb_listener.http \
   -target=aws_lb_target_group.service \
   -target=aws_lb.this \

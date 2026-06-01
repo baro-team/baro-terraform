@@ -5,6 +5,9 @@ environment = "dev"
 # Restrict this to your IP in real dev environments.
 allowed_http_cidrs = ["0.0.0.0/0"]
 
+domain_name     = "barocloud.com"
+app_domain_name = "dev.barocloud.com"
+
 # CI pushes :latest by default and forces a new ECS deployment.
 image_tag = "latest"
 
