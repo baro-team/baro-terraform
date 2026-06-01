@@ -40,6 +40,39 @@ resource "aws_security_group" "ecs_tasks" {
   }
 }
 
+resource "aws_security_group" "kafka" {
+  name        = "${local.name_prefix}-kafka"
+  description = "Allow Kafka from ECS tasks and on-premises VPN"
+  vpc_id      = aws_vpc.this.id
+
+  ingress {
+    description     = "Kafka from ECS tasks"
+    from_port       = 9092
+    to_port         = 9092
+    protocol        = "tcp"
+    security_groups = [aws_security_group.ecs_tasks.id]
+  }
+
+  ingress {
+    description = "Kafka from on-premises via VPN"
+    from_port   = 9092
+    to_port     = 9092
+    protocol    = "tcp"
+    cidr_blocks = [var.onprem_cidr, var.onprem_vm_cidr]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "${local.name_prefix}-kafka"
+  }
+}
+
 resource "aws_security_group_rule" "alb_to_tasks" {
   for_each = local.services
 

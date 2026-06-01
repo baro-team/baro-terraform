@@ -139,6 +139,11 @@ resource "aws_vpn_connection_route" "onprem" {
   destination_cidr_block = var.onprem_cidr
 }
 
+resource "aws_vpn_connection_route" "onprem_vm" {
+  vpn_connection_id      = aws_vpn_connection.onprem.id
+  destination_cidr_block = var.onprem_vm_cidr
+}
+
 # private 서브넷 라우트 테이블에 VPN 경로 전파
 resource "aws_vpn_gateway_route_propagation" "private" {
   vpn_gateway_id = aws_vpn_gateway.this.id
