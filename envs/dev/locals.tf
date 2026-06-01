@@ -61,6 +61,9 @@ locals {
       extra_environment = {
         JWT_ACCESS_TOKEN_EXPIRATION_SECONDS  = "3600"
         JWT_REFRESH_TOKEN_EXPIRATION_SECONDS = "1209600"
+        SPRING_JPA_HIBERNATE_DDL_AUTO        = "update"
+        SPRINGDOC_API_DOCS_PATH              = "/api-docs"
+        SPRINGDOC_SWAGGER_UI_PATH            = "/swagger-ui.html"
       }
       secret_names = [
         "USER_DB_URL",
