@@ -28,7 +28,7 @@ resource "aws_ecs_task_definition" "service" {
   container_definitions = jsonencode([
     {
       name      = each.value.module
-      image     = "${aws_ecr_repository.service[each.key].repository_url}:${var.image_tag}"
+      image     = "${local.shared.ecr_repository_urls[each.key]}:${var.image_tag}"
       essential = true
 
       portMappings = [
@@ -56,13 +56,13 @@ resource "aws_ecs_task_definition" "service" {
         [
           for secret_name in each.value.secret_names : {
             name      = secret_name
-            valueFrom = aws_secretsmanager_secret.service["${each.key}/${secret_name}"].arn
+            valueFrom = local.shared.service_secret_arns["${each.key}/${secret_name}"]
           }
         ],
         each.key == "dispatch" ? [
           {
             name      = "JWT_SECRET"
-            valueFrom = aws_secretsmanager_secret.service["user/JWT_SECRET"].arn
+            valueFrom = local.shared.service_secret_arns["user/JWT_SECRET"]
           }
         ] : []
       )
@@ -93,7 +93,7 @@ resource "aws_ecs_service" "service" {
   enable_execute_command             = true
 
   network_configuration {
-    subnets          = [for subnet in aws_subnet.private : subnet.id]
+    subnets          = local.shared.private_subnet_ids
     security_groups  = [aws_security_group.ecs_tasks.id]
     assign_public_ip = false
   }

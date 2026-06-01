@@ -5,16 +5,12 @@ locals {
     Project     = var.project
     Environment = var.environment
     ManagedBy   = "terraform"
+    Layer       = "shared"
   }
 
   all_services = {
     control = {
-      module         = "control-service"
-      container_port = 8081
-      path_patterns  = ["/control", "/control/*"]
-      extra_environment = {
-        MQTT_MODE = "LOCAL"
-      }
+      module = "control-service"
       secret_names = [
         "REDIS_HOST",
         "REDIS_PORT",
@@ -30,14 +26,7 @@ locals {
     }
 
     dispatch = {
-      module         = "dispatch-service"
-      container_port = 8082
-      path_patterns  = ["/dispatch", "/dispatch/*"]
-      extra_environment = {
-        SPRING_JPA_HIBERNATE_DDL_AUTO = "update"
-        SPRINGDOC_API_DOCS_PATH       = "/dispatch/api-docs"
-        SPRINGDOC_SWAGGER_UI_PATH     = "/dispatch/swagger-ui.html"
-      }
+      module = "dispatch-service"
       secret_names = [
         "DISPATCH_DB_URL",
         "DISPATCH_DB_USERNAME",
@@ -47,21 +36,12 @@ locals {
     }
 
     relocation = {
-      module            = "relocation-service"
-      container_port    = 8083
-      path_patterns     = ["/relocation", "/relocation/*"]
-      extra_environment = {}
-      secret_names      = []
+      module       = "relocation-service"
+      secret_names = []
     }
 
     user = {
-      module         = "user-service"
-      container_port = 8084
-      path_patterns  = ["/auth", "/auth/*", "/users", "/users/*"]
-      extra_environment = {
-        JWT_ACCESS_TOKEN_EXPIRATION_SECONDS  = "3600"
-        JWT_REFRESH_TOKEN_EXPIRATION_SECONDS = "1209600"
-      }
+      module = "user-service"
       secret_names = [
         "USER_DB_URL",
         "USER_DB_USERNAME",

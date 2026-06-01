@@ -1,7 +1,7 @@
 resource "aws_security_group" "alb" {
   name        = "${local.name_prefix}-alb"
   description = "Allow HTTP traffic to ALB"
-  vpc_id      = aws_vpc.this.id
+  vpc_id      = local.shared.vpc_id
 
   ingress {
     description = "HTTP"
@@ -26,7 +26,7 @@ resource "aws_security_group" "alb" {
 resource "aws_security_group" "ecs_tasks" {
   name        = "${local.name_prefix}-ecs-tasks"
   description = "Allow ALB to reach ECS tasks"
-  vpc_id      = aws_vpc.this.id
+  vpc_id      = local.shared.vpc_id
 
   egress {
     from_port   = 0

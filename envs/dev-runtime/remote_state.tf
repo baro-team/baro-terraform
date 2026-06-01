@@ -1,0 +1,11 @@
+data "terraform_remote_state" "shared" {
+  backend = "s3"
+
+  config = {
+    bucket         = "baro-dev-terraform-state-379992420279"
+    key            = "baro/dev-shared/terraform.tfstate"
+    region         = "ap-northeast-2"
+    dynamodb_table = "baro-dev-terraform-locks"
+    encrypt        = true
+  }
+}

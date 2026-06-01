@@ -8,16 +8,6 @@ output "ecs_cluster_name" {
   value       = aws_ecs_cluster.this.name
 }
 
-output "ecr_repository_urls" {
-  description = "ECR repository URLs by service key."
-  value       = { for key, repo in aws_ecr_repository.service : key => repo.repository_url }
-}
-
-output "secret_names" {
-  description = "Secrets to populate before running tasks."
-  value       = [for secret in aws_secretsmanager_secret.service : secret.name]
-}
-
 output "rds_endpoint" {
   description = "Private RDS PostgreSQL endpoint."
   value       = aws_db_instance.postgres.endpoint
@@ -50,7 +40,7 @@ output "db_init_task_definition_arn" {
 
 output "private_subnet_ids" {
   description = "Private subnet IDs for running one-off ECS tasks."
-  value       = [for subnet in aws_subnet.private : subnet.id]
+  value       = local.shared.private_subnet_ids
 }
 
 output "ecs_tasks_security_group_id" {

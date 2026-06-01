@@ -18,8 +18,7 @@ rds_allocated_storage = 20
 rds_database_name     = "baro"
 rds_master_username   = "baroadmin"
 
-# Start with user-service running and dispatch-service infrastructure prepared.
-# Add more later, for example: ["user", "dispatch", "relocation", "control"]
+# Must match envs/dev-shared enabled_services.
 enabled_services = ["user", "dispatch"]
 
 service_desired_counts = {

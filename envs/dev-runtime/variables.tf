@@ -1,5 +1,5 @@
 variable "aws_region" {
-  description = "AWS region for dev resources."
+  description = "AWS region for dev runtime resources."
   type        = string
   default     = "ap-northeast-2"
 }
@@ -14,24 +14,6 @@ variable "environment" {
   description = "Deployment environment name."
   type        = string
   default     = "dev"
-}
-
-variable "vpc_cidr" {
-  description = "CIDR block for the VPC."
-  type        = string
-  default     = "10.20.0.0/16"
-}
-
-variable "public_subnet_cidrs" {
-  description = "CIDR blocks for public subnets."
-  type        = list(string)
-  default     = ["10.20.0.0/24", "10.20.1.0/24"]
-}
-
-variable "private_subnet_cidrs" {
-  description = "CIDR blocks for private subnets."
-  type        = list(string)
-  default     = ["10.20.10.0/24", "10.20.11.0/24"]
 }
 
 variable "allowed_http_cidrs" {
@@ -65,7 +47,7 @@ variable "service_memory" {
 }
 
 variable "enabled_services" {
-  description = "Services to create in dev."
+  description = "Services to create in dev runtime. Must match dev-shared enabled_services."
   type        = set(string)
   default     = ["user", "dispatch"]
 
@@ -121,7 +103,7 @@ variable "rds_master_username" {
 }
 
 variable "onprem_cidr" {
-  description = "On-premises network CIDR routed through Site-to-Site VPN."
+  description = "On-premises CIDR block routed through the Site-to-Site VPN."
   type        = string
   default     = "192.168.200.0/22"
 }

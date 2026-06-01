@@ -6,7 +6,7 @@ resource "random_password" "rds_master" {
 
 resource "aws_db_subnet_group" "this" {
   name       = local.name_prefix
-  subnet_ids = [for subnet in aws_subnet.private : subnet.id]
+  subnet_ids = local.shared.private_subnet_ids
 
   tags = {
     Name = local.name_prefix
@@ -16,7 +16,7 @@ resource "aws_db_subnet_group" "this" {
 resource "aws_security_group" "rds" {
   name        = "${local.name_prefix}-rds"
   description = "Allow PostgreSQL from ECS tasks"
-  vpc_id      = aws_vpc.this.id
+  vpc_id      = local.shared.vpc_id
 
   ingress {
     description     = "PostgreSQL from ECS tasks"
@@ -94,42 +94,42 @@ resource "aws_secretsmanager_secret_version" "rds_master" {
 resource "aws_secretsmanager_secret_version" "user_db_url" {
   count = contains(var.enabled_services, "user") ? 1 : 0
 
-  secret_id     = aws_secretsmanager_secret.service["user/USER_DB_URL"].id
+  secret_id     = local.shared.service_secret_ids["user/USER_DB_URL"]
   secret_string = "jdbc:postgresql://${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${aws_db_instance.postgres.db_name}?currentSchema=user_service"
 }
 
 resource "aws_secretsmanager_secret_version" "user_db_username" {
   count = contains(var.enabled_services, "user") ? 1 : 0
 
-  secret_id     = aws_secretsmanager_secret.service["user/USER_DB_USERNAME"].id
+  secret_id     = local.shared.service_secret_ids["user/USER_DB_USERNAME"]
   secret_string = aws_db_instance.postgres.username
 }
 
 resource "aws_secretsmanager_secret_version" "user_db_password" {
   count = contains(var.enabled_services, "user") ? 1 : 0
 
-  secret_id     = aws_secretsmanager_secret.service["user/USER_DB_PASSWORD"].id
+  secret_id     = local.shared.service_secret_ids["user/USER_DB_PASSWORD"]
   secret_string = random_password.rds_master.result
 }
 
 resource "aws_secretsmanager_secret_version" "dispatch_db_url" {
   count = contains(var.enabled_services, "dispatch") ? 1 : 0
 
-  secret_id     = aws_secretsmanager_secret.service["dispatch/DISPATCH_DB_URL"].id
+  secret_id     = local.shared.service_secret_ids["dispatch/DISPATCH_DB_URL"]
   secret_string = "jdbc:postgresql://${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${aws_db_instance.postgres.db_name}?currentSchema=dispatch_service"
 }
 
 resource "aws_secretsmanager_secret_version" "dispatch_db_username" {
   count = contains(var.enabled_services, "dispatch") ? 1 : 0
 
-  secret_id     = aws_secretsmanager_secret.service["dispatch/DISPATCH_DB_USERNAME"].id
+  secret_id     = local.shared.service_secret_ids["dispatch/DISPATCH_DB_USERNAME"]
   secret_string = aws_db_instance.postgres.username
 }
 
 resource "aws_secretsmanager_secret_version" "dispatch_db_password" {
   count = contains(var.enabled_services, "dispatch") ? 1 : 0
 
-  secret_id     = aws_secretsmanager_secret.service["dispatch/DISPATCH_DB_PASSWORD"].id
+  secret_id     = local.shared.service_secret_ids["dispatch/DISPATCH_DB_PASSWORD"]
   secret_string = random_password.rds_master.result
 }
 
