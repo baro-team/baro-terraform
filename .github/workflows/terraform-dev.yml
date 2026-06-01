@@ -3,14 +3,16 @@ name: Terraform Dev
 on:
   pull_request:
     paths:
-      - envs/dev/**
+      - envs/dev-shared/**
+      - envs/dev-runtime/**
       - .github/workflows/terraform-dev.yml
       - README.md
   push:
     branches:
       - main
     paths:
-      - envs/dev/**
+      - envs/dev-shared/**
+      - envs/dev-runtime/**
       - .github/workflows/terraform-dev.yml
       - README.md
   workflow_dispatch:
@@ -24,16 +26,17 @@ on:
           - plan
           - apply
           - destroy
-      destroy_scope:
-        description: Destroy scope. runtime keeps VPC/Subnets/ECR/service secret placeholders.
-        required: false
+      stack:
+        description: Terraform stack to run
+        required: true
         default: runtime
         type: choice
         options:
+          - shared
           - runtime
           - all
       confirm_destroy:
-        description: Type destroy-dev for runtime destroy, destroy-dev-all for all destroy
+        description: Type destroy-dev-runtime for runtime destroy or destroy-dev-all for all destroy
         required: false
         default: ""
 
@@ -54,10 +57,6 @@ jobs:
     name: Terraform Dev
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: envs/dev
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -65,17 +64,18 @@ jobs:
       - name: Validate destroy confirmation
         if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy'
         env:
-          DESTROY_SCOPE: ${{ inputs.destroy_scope }}
+          STACK: ${{ inputs.stack }}
           CONFIRM_DESTROY: ${{ inputs.confirm_destroy }}
         run: |
-          case "$DESTROY_SCOPE" in
-            runtime) expected="destroy-dev" ;;
+          case "$STACK" in
+            runtime) expected="destroy-dev-runtime" ;;
             all) expected="destroy-dev-all" ;;
-            *) echo "Invalid destroy_scope: $DESTROY_SCOPE"; exit 1 ;;
+            shared) echo "Standalone shared destroy is disabled. Use stack=all after reviewing the plan."; exit 1 ;;
+            *) echo "Invalid stack: $STACK"; exit 1 ;;
           esac
 
           if [ "$CONFIRM_DESTROY" != "$expected" ]; then
-            echo "Destroy scope '$DESTROY_SCOPE' requires confirm_destroy=$expected"
+            echo "Destroy stack '$STACK' requires confirm_destroy=$expected"
             exit 1
           fi
 
@@ -92,88 +92,86 @@ jobs:
           terraform_version: 1.8.5
           terraform_wrapper: false
 
-      - name: Terraform fmt
-        run: terraform fmt -check -recursive
-
-      - name: Terraform init
-        run: terraform init -backend-config=backend.hcl.example
-
-      - name: Terraform validate
-        run: terraform validate
-
-      - name: Terraform plan
-        if: github.event_name != 'workflow_dispatch' || inputs.action != 'destroy'
-        run: terraform plan -no-color -out=tfplan
-
-      - name: Terraform runtime destroy plan
-        if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy' && inputs.destroy_scope == 'runtime'
+      - name: Check dev-shared state exists
+        id: shared_state
+        if: github.event_name != 'workflow_dispatch' || inputs.stack == 'runtime' || inputs.stack == 'all'
         run: |
-          terraform plan -destroy -no-color -out=tfplan \
-            -target=aws_route_table_association.private \
-            -target=aws_route_table.private \
-            -target=aws_nat_gateway.this \
-            -target=aws_eip.nat \
-            -target=aws_ecs_service.service \
-            -target=aws_ecs_task_definition.service \
-            -target=aws_ecs_cluster.this \
-            -target=aws_cloudwatch_log_group.service \
-            -target=aws_ecs_task_definition.db_init \
-            -target=aws_cloudwatch_log_group.db_init \
-            -target=aws_lb_listener_rule.user_docs \
-            -target=aws_lb_listener_rule.service \
-            -target=aws_lb_listener.http \
-            -target=aws_lb_target_group.service \
-            -target=aws_lb.this \
-            -target=aws_security_group_rule.alb_to_tasks \
-            -target=aws_security_group.alb \
-            -target=aws_security_group.ecs_tasks \
-            -target=aws_db_instance.postgres \
-            -target=aws_db_subnet_group.this \
-            -target=aws_security_group.rds \
-            -target=random_password.rds_master \
-            -target=aws_secretsmanager_secret.rds_master \
-            -target=aws_secretsmanager_secret_version.rds_master \
-            -target=aws_secretsmanager_secret_version.user_db_url \
-            -target=aws_secretsmanager_secret_version.user_db_username \
-            -target=aws_secretsmanager_secret_version.user_db_password \
-            -target=aws_secretsmanager_secret_version.dispatch_db_url \
-            -target=aws_secretsmanager_secret_version.dispatch_db_username \
-            -target=aws_secretsmanager_secret_version.dispatch_db_password \
-            -target=aws_iam_role_policy_attachment.ecs_task_execution \
-            -target=aws_iam_role_policy.ecs_task_execution_secrets \
-            -target=aws_iam_role.ecs_task_execution \
-            -target=aws_iam_role.ecs_task
-
-      - name: Terraform full destroy plan
-        if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy' && inputs.destroy_scope == 'all'
-        run: terraform plan -destroy -no-color -out=tfplan
-
-      - name: Guard runtime destroy keep-list
-        if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy' && inputs.destroy_scope == 'runtime'
-        run: |
-          terraform show -json tfplan > tfplan.json
-
-          blocked_addresses="$(jq -r '
-            .resource_changes[]?
-            | select(.change.actions | index("delete"))
-            | select(
-                .address | test("^(aws_vpc\\.this|aws_subnet\\.(public|private)|aws_internet_gateway\\.this|aws_route_table\\.public|aws_route_table_association\\.public|aws_ecr_repository\\.service|aws_ecr_lifecycle_policy\\.service|aws_secretsmanager_secret\\.service)")
-              )
-            | .address
-          ' tfplan.json)"
-
-          if [ -n "$blocked_addresses" ]; then
-            echo "Runtime destroy plan includes keep-list resources:"
-            echo "$blocked_addresses"
-            exit 1
+          if aws s3api head-object \
+            --bucket baro-dev-terraform-state-379992420279 \
+            --key baro/dev-shared/terraform.tfstate \
+            >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "dev-shared state does not exist yet; skipping runtime plan until shared is bootstrapped."
           fi
 
-      - name: Terraform apply
+      - name: Terraform fmt
+        run: terraform fmt -check -recursive envs/dev-shared envs/dev-runtime
+
+      - name: Terraform shared init
+        if: github.event_name != 'workflow_dispatch' || inputs.stack == 'shared' || inputs.stack == 'all'
+        working-directory: envs/dev-shared
+        run: terraform init -backend-config=backend.hcl.example
+
+      - name: Terraform shared validate
+        if: github.event_name != 'workflow_dispatch' || inputs.stack == 'shared' || inputs.stack == 'all'
+        working-directory: envs/dev-shared
+        run: terraform validate
+
+      - name: Terraform runtime init
+        if: github.event_name != 'workflow_dispatch' || inputs.stack == 'runtime' || inputs.stack == 'all'
+        working-directory: envs/dev-runtime
+        run: terraform init -backend-config=backend.hcl.example
+
+      - name: Terraform runtime validate
+        if: github.event_name != 'workflow_dispatch' || inputs.stack == 'runtime' || inputs.stack == 'all'
+        working-directory: envs/dev-runtime
+        run: terraform validate
+
+      - name: Terraform shared plan
         if: >-
-          (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-          (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')
+          github.event_name == 'pull_request' ||
+          github.event_name == 'push' ||
+          (github.event_name == 'workflow_dispatch' && inputs.action == 'plan' && (inputs.stack == 'shared' || inputs.stack == 'all'))
+        working-directory: envs/dev-shared
+        run: terraform plan -no-color
+
+      - name: Terraform runtime plan
+        if: >-
+          steps.shared_state.outputs.exists == 'true' &&
+          (github.event_name == 'pull_request' ||
+          github.event_name == 'push' ||
+          (github.event_name == 'workflow_dispatch' && inputs.action == 'plan' && (inputs.stack == 'runtime' || inputs.stack == 'all')))
+        working-directory: envs/dev-runtime
+        run: terraform plan -no-color
+
+      - name: Terraform shared apply
+        if: github.event_name == 'workflow_dispatch' && inputs.action == 'apply' && (inputs.stack == 'shared' || inputs.stack == 'all')
+        working-directory: envs/dev-shared
+        run: terraform apply -auto-approve -no-color
+
+      - name: Terraform runtime apply
+        if: github.event_name == 'workflow_dispatch' && inputs.action == 'apply' && (inputs.stack == 'runtime' || inputs.stack == 'all')
+        working-directory: envs/dev-runtime
+        run: terraform apply -auto-approve -no-color
+
+      - name: Terraform runtime destroy plan
+        if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy' && (inputs.stack == 'runtime' || inputs.stack == 'all')
+        working-directory: envs/dev-runtime
+        run: terraform plan -destroy -no-color -out=tfplan
+
+      - name: Terraform runtime destroy
+        if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy' && (inputs.stack == 'runtime' || inputs.stack == 'all')
+        working-directory: envs/dev-runtime
         run: terraform apply -auto-approve -no-color tfplan
 
-      - name: Terraform destroy
-        if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy'
+      - name: Terraform shared destroy plan
+        if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy' && inputs.stack == 'all'
+        working-directory: envs/dev-shared
+        run: terraform plan -destroy -no-color -out=tfplan
+
+      - name: Terraform shared destroy
+        if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy' && inputs.stack == 'all'
+        working-directory: envs/dev-shared
         run: terraform apply -auto-approve -no-color tfplan
