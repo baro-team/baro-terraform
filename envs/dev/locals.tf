@@ -54,13 +54,13 @@ locals {
     user = {
       module         = "user-service"
       container_port = 8084
-      path_patterns  = ["/auth", "/auth/*", "/users", "/users/*"]
+      path_patterns  = ["/user", "/user/*"]
       extra_environment = {
         JWT_ACCESS_TOKEN_EXPIRATION_SECONDS  = "3600"
         JWT_REFRESH_TOKEN_EXPIRATION_SECONDS = "1209600"
         SPRING_JPA_HIBERNATE_DDL_AUTO        = "update"
-        SPRINGDOC_API_DOCS_PATH              = "/api-docs"
-        SPRINGDOC_SWAGGER_UI_PATH            = "/swagger-ui.html"
+        SPRINGDOC_API_DOCS_PATH              = "/user/api-docs"
+        SPRINGDOC_SWAGGER_UI_PATH            = "/user/swagger-ui.html"
       }
       secret_names = [
         "USER_DB_URL",

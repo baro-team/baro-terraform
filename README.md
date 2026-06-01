@@ -33,19 +33,19 @@
 | `control` | `control-service` | 8081 | `/control*` |
 | `dispatch` | `dispatch-service` | 8082 | `/dispatch*` |
 | `relocation` | `relocation-service` | 8083 | `/relocation*` |
-| `user` | `user-service` | 8084 | `/auth*`, `/users*`, `/swagger-ui*`, `/api-docs*` |
+| `user` | `user-service` | 8084 | `/user*` |
 
 ## Dev URLs
 
 Swagger URLs:
 
-- User: `https://dev.barocloud.com/swagger-ui.html`
+- User: `https://dev.barocloud.com/user/swagger-ui.html`
 - Dispatch: `https://dev.barocloud.com/dispatch/swagger-ui.html`
 
 Service base URLs:
 
-- User auth: `https://dev.barocloud.com/auth`
-- User: `https://dev.barocloud.com/users`
+- User auth: `https://dev.barocloud.com/user/auth`
+- User: `https://dev.barocloud.com/user/users`
 - Dispatch: `https://dev.barocloud.com/dispatch`
 
 ## 운영 방식
@@ -151,8 +151,8 @@ terraform plan -destroy \
   -target=aws_cloudwatch_log_group.service \
   -target=aws_ecs_task_definition.db_init \
   -target=aws_cloudwatch_log_group.db_init \
-  -target=aws_lb_listener_rule.user_docs \
   -target=aws_lb_listener_rule.service \
+  -target=aws_lb_listener.https \
   -target=aws_lb_listener.http \
   -target=aws_lb_target_group.service \
   -target=aws_lb.this \

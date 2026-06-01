@@ -77,27 +77,3 @@ resource "aws_lb_listener_rule" "service" {
     }
   }
 }
-
-resource "aws_lb_listener_rule" "user_docs" {
-  count = contains(var.enabled_services, "user") ? 1 : 0
-
-  listener_arn = aws_lb_listener.https.arn
-  priority     = 200
-
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.service["user"].arn
-  }
-
-  condition {
-    path_pattern {
-      values = [
-        "/swagger-ui.html",
-        "/swagger-ui/*",
-        "/api-docs",
-        "/api-docs/*",
-        "/v3/api-docs*",
-      ]
-    }
-  }
-}
