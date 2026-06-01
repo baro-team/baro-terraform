@@ -119,3 +119,9 @@ variable "rds_master_username" {
   type        = string
   default     = "baroadmin"
 }
+
+variable "onprem_cidr" {
+  description = "On-premises network CIDR routed through Site-to-Site VPN."
+  type        = string
+  default     = "192.168.200.0/22"
+}
