@@ -12,6 +12,7 @@ locals {
     control = {
       module            = "control-service"
       container_port    = 8081
+      priority          = 100
       path_patterns     = ["/control", "/control/*"]
       health_check_path = "/actuator/health"
       extra_environment = {
@@ -30,6 +31,7 @@ locals {
     dispatch = {
       module            = "dispatch-service"
       container_port    = 8082
+      priority          = 101
       path_patterns     = ["/dispatch", "/dispatch/*"]
       health_check_path = "/actuator/health"
       extra_environment = {
@@ -48,6 +50,7 @@ locals {
     relocation = {
       module            = "relocation-service"
       container_port    = 8083
+      priority          = 103
       path_patterns     = ["/relocation", "/relocation/*"]
       health_check_path = "/actuator/health"
       extra_environment = {}
@@ -57,6 +60,7 @@ locals {
     user = {
       module            = "user-service"
       container_port    = 8084
+      priority          = 102
       path_patterns     = ["/user", "/user/*"]
       health_check_path = "/actuator/health"
       extra_environment = {

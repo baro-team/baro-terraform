@@ -64,7 +64,7 @@ resource "aws_lb_listener_rule" "service" {
   for_each = local.services
 
   listener_arn = aws_lb_listener.https.arn
-  priority     = 100 + index(keys(local.services), each.key)
+  priority     = each.value.priority
 
   action {
     type             = "forward"
