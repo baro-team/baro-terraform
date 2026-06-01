@@ -79,7 +79,7 @@ variable "service_memory" {
 variable "enabled_services" {
   description = "Services to create in dev."
   type        = set(string)
-  default     = ["user", "dispatch"]
+  default     = ["user", "dispatch", "control"]
 
   validation {
     condition     = alltrue([for service in var.enabled_services : contains(["control", "dispatch", "relocation", "user"], service)])
@@ -136,4 +136,10 @@ variable "onprem_cidr" {
   description = "On-premises network CIDR routed through Site-to-Site VPN."
   type        = string
   default     = "192.168.200.0/22"
+}
+
+variable "onprem_vm_cidr" {
+  description = "OpenStack internal VM network CIDR routed through Site-to-Site VPN."
+  type        = string
+  default     = "10.10.10.0/24"
 }
