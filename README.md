@@ -4,16 +4,48 @@
 
 ## Dev stack
 
-현재 dev 환경은 아래 리소스를 생성/관리합니다.
+dev 환경은 lifecycle에 따라 `shared`와 `runtime` 두 Terraform root module/state로 분리되어 있습니다.
+
+```text
+baro-terraform/
+├── envs/
+│   ├── dev-shared/          # 오래 유지할 기반 리소스
+│   │   ├── network.tf       # VPC, public/private subnets, IGW, public route table
+│   │   ├── ecr.tf           # ECR repositories and lifecycle policies
+│   │   ├── secrets.tf       # service-level Secrets Manager placeholders
+│   │   ├── outputs.tf       # runtime에서 참조하는 shared outputs
+│   │   └── backend.hcl.example
+│   └── dev-runtime/         # 비용 절감을 위해 자주 올리고 내리는 실행 리소스
+│       ├── remote_state.tf  # dev-shared state 참조
+│       ├── network.tf       # NAT Gateway, EIP, private route table
+│       ├── alb.tf           # ALB, listener, target groups, listener rules
+│       ├── ecs.tf           # ECS cluster, task definitions, services, logs
+│       ├── rds.tf           # RDS, DB secrets, db-init task
+│       ├── iam.tf           # ECS task roles
+│       ├── security_groups.tf
+│       └── backend.hcl.example
+└── .github/workflows/terraform-dev.yml
+```
+
+`dev-shared`가 관리합니다.
 
 - VPC with public/private subnets
-- NAT Gateway for private ECS tasks
+- Internet Gateway and public route table
 - ECR repositories
+- ECR lifecycle policies
+- Secrets Manager service placeholders
+
+`dev-runtime`이 관리합니다.
+
+- NAT Gateway for private ECS tasks
 - ECS cluster and Fargate services
 - Single private RDS PostgreSQL instance
 - Public ALB with path-based routing
 - CloudWatch log groups
-- Secrets Manager entries
+- ECS task IAM roles
+- DB-related Secrets Manager values
+
+이 구조에서는 비용 절감용 destroy가 `envs/dev-runtime` state만 대상으로 실행되므로, ECR 이미지와 네트워크 기반 리소스가 삭제 대상에서 구조적으로 제외됩니다.
 
 현재 실행 중인 서비스:
 
@@ -51,9 +83,9 @@ Service base URLs:
 
 Terraform은 GitHub Actions로 실행합니다.
 
-- PR branch push: `terraform fmt`, `init`, `validate`, `plan`
-- `main` push/merge: `terraform fmt`, `init`, `validate`, `plan`, `apply`
-- 수동 실행: `workflow_dispatch`로 `plan`, `apply`, `destroy` 선택 가능
+- PR branch push: `dev-shared`, `dev-runtime` 각각 `fmt`, `init`, `validate`, `plan`
+- `main` push/merge: `dev-shared`, `dev-runtime` plan까지 실행
+- 수동 실행: `workflow_dispatch`로 `plan`, `apply`, `destroy`와 `stack` 선택 가능
 
 즉 일반적인 변경 흐름은 아래와 같습니다.
 
@@ -62,7 +94,7 @@ branch에서 Terraform 코드 수정
 → PR 생성
 → GitHub Actions plan 확인
 → PR merge
-→ main에서 자동 apply
+→ 필요 시 workflow_dispatch로 수동 apply
 ```
 
 가능하면 `main` 직접 push는 피하고 PR merge로 반영합니다.
@@ -84,39 +116,49 @@ Workflow 파일:
 
 ```text
 action = destroy
-destroy_scope = runtime
-confirm_destroy = destroy-dev
+stack = runtime
+confirm_destroy = destroy-dev-runtime
 ```
 
-`runtime` destroy는 아래 리소스를 삭제 대상으로 잡고, VPC/Subnets/ECR/서비스 Secret placeholder는 남깁니다.
+`runtime` destroy는 `envs/dev-runtime` state만 삭제합니다.
 
+- NAT Gateway/EIP/private route table
 - ECS cluster/services/task definitions
 - ALB/listener/rules/target groups
-- NAT Gateway/EIP/private route table
-- RDS instance/DB subnet group/RDS security group/RDS secret versions
+- RDS instance/DB subnet group/RDS security group/DB secret values managed by runtime
 - ECS task IAM roles
 - CloudWatch log groups
+
+`envs/dev-shared` state의 VPC/Subnets/IGW/ECR/서비스 Secret placeholder는 남습니다.
 
 전체 dev stack을 삭제해야 할 때만 `all` 범위를 사용합니다.
 
 ```text
 action = destroy
-destroy_scope = all
+stack = all
 confirm_destroy = destroy-dev-all
 ```
 
-`confirm_destroy` 값이 destroy 범위와 정확히 맞지 않으면 destroy plan 전에 실패합니다.
+`all` destroy는 의존성 순서 때문에 `runtime`을 먼저 삭제하고, 그 다음 `shared`를 삭제합니다. `confirm_destroy` 값이 stack과 정확히 맞지 않으면 destroy 전에 실패합니다.
+
+`stack = shared` 단독 destroy는 막아두었습니다. runtime이 살아있는 상태에서 shared만 지우면 ECR/Secrets/VPC 의존성이 깨질 수 있기 때문입니다.
 
 ## Remote state
 
-dev 환경은 S3 backend를 사용합니다.
+dev 환경은 S3 backend를 사용하며 stack별 state key가 분리되어 있습니다.
 
 ```hcl
 bucket         = "baro-dev-terraform-state-379992420279"
-key            = "baro/dev/terraform.tfstate"
 region         = "ap-northeast-2"
 dynamodb_table = "baro-dev-terraform-locks"
 encrypt        = true
+```
+
+State keys:
+
+```text
+dev-shared  = baro/dev-shared/terraform.tfstate
+dev-runtime = baro/dev-runtime/terraform.tfstate
 ```
 
 State locking은 DynamoDB를 사용합니다.
@@ -126,7 +168,11 @@ State locking은 DynamoDB를 사용합니다.
 대부분의 작업은 GitHub Actions에서 처리합니다. 그래도 로컬 확인이 필요하면 아래처럼 실행합니다.
 
 ```bash
-cd envs/dev
+cd envs/dev-shared
+AWS_PROFILE=baro-dev AWS_REGION=ap-northeast-2 terraform init -backend-config=backend.hcl.example
+AWS_PROFILE=baro-dev AWS_REGION=ap-northeast-2 terraform plan
+
+cd ../dev-runtime
 AWS_PROFILE=baro-dev AWS_REGION=ap-northeast-2 terraform init -backend-config=backend.hcl.example
 AWS_PROFILE=baro-dev AWS_REGION=ap-northeast-2 terraform plan
 ```
@@ -135,48 +181,32 @@ AWS_PROFILE=baro-dev AWS_REGION=ap-northeast-2 terraform plan
 
 ### 로컬 runtime destroy plan이 필요할 때
 
-GitHub Actions의 `destroy_scope = runtime`과 같은 범위를 로컬에서 미리 확인하려면 아래처럼 `-target`을 사용합니다. 실제 삭제 전에는 반드시 plan 결과를 확인합니다.
+GitHub Actions의 `stack = runtime`과 같은 범위를 로컬에서 미리 확인하려면 `envs/dev-runtime`에서 destroy plan을 봅니다. `-target`을 나열하지 않아도 runtime state에 속한 리소스만 삭제 대상으로 잡힙니다.
 
 ```bash
-cd envs/dev
-terraform plan -destroy \
-  -target=aws_route_table_association.private \
-  -target=aws_route_table.private \
-  -target=aws_nat_gateway.this \
-  -target=aws_eip.nat \
-  -target=aws_ecs_service.service \
-  -target=aws_ecs_task_definition.service \
-  -target=aws_ecs_cluster.this \
-  -target=aws_cloudwatch_log_group.service \
-  -target=aws_ecs_task_definition.db_init \
-  -target=aws_cloudwatch_log_group.db_init \
-  -target=aws_lb_listener_rule.user_docs \
-  -target=aws_lb_listener_rule.service \
-  -target=aws_lb_listener.http \
-  -target=aws_lb_target_group.service \
-  -target=aws_lb.this \
-  -target=aws_security_group_rule.alb_to_tasks \
-  -target=aws_security_group.alb \
-  -target=aws_security_group.ecs_tasks \
-  -target=aws_db_instance.postgres \
-  -target=aws_db_subnet_group.this \
-  -target=aws_security_group.rds \
-  -target=random_password.rds_master \
-  -target=aws_secretsmanager_secret.rds_master \
-  -target=aws_secretsmanager_secret_version.rds_master \
-  -target=aws_secretsmanager_secret_version.user_db_url \
-  -target=aws_secretsmanager_secret_version.user_db_username \
-  -target=aws_secretsmanager_secret_version.user_db_password \
-  -target=aws_secretsmanager_secret_version.dispatch_db_url \
-  -target=aws_secretsmanager_secret_version.dispatch_db_username \
-  -target=aws_secretsmanager_secret_version.dispatch_db_password \
-  -target=aws_iam_role_policy_attachment.ecs_task_execution \
-  -target=aws_iam_role_policy.ecs_task_execution_secrets \
-  -target=aws_iam_role.ecs_task_execution \
-  -target=aws_iam_role.ecs_task
+cd envs/dev-runtime
+terraform plan -destroy
 ```
 
-장기적으로는 ECR/Secrets 같은 보존 리소스와 ECS/ALB/RDS/NAT 같은 실행 리소스를 별도 root module/state로 분리하는 것이 가장 안전합니다.
+### 기존 단일 dev state에서 분리할 때
+
+기존 `baro/dev/terraform.tfstate`에 리소스가 남아있는 상태에서 이 구조로 전환할 경우, 바로 apply하면 중복 생성/이름 충돌이 날 수 있습니다. 이때는 먼저 기존 state를 `dev-shared`, `dev-runtime` state로 이동하거나, 기존 dev 리소스를 완전히 destroy한 뒤 `dev-shared` → `dev-runtime` 순서로 새로 apply합니다.
+
+이 전환 작업 때문에 `main` push/merge에서는 자동 apply하지 않고 plan까지만 실행합니다. state 분리/bootstrap이 끝난 뒤 필요하면 자동 apply 정책을 다시 검토합니다.
+
+새로 생성하는 경우 순서:
+
+```text
+1. envs/dev-shared apply
+2. envs/dev-runtime apply
+```
+
+비용 절감용 destroy:
+
+```text
+1. envs/dev-runtime destroy
+2. envs/dev-shared 유지
+```
 
 ## RDS layout
 
