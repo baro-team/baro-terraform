@@ -16,14 +16,15 @@ locals {
       path_patterns     = ["/control", "/control/*"]
       health_check_path = "/actuator/health"
       extra_environment = {
-        MQTT_MODE               = "aws"
-        IOT_ENDPOINT            = "a7xnpqbtrafiw-ats.iot.ap-northeast-2.amazonaws.com"
-        IOT_CA_PATH             = "certs/AmazonRootCA1.pem"
-        IOT_CERT_PATH           = "certs/5647e867d2841c19a463402ca6e2c7fce6fde3a45c35c250087dda79a985a0f1-certificate.pem.crt"
-        IOT_KEY_PATH            = "certs/5647e867d2841c19a463402ca6e2c7fce6fde3a45c35c250087dda79a985a0f1-private.pem.key"
-        KAFKA_BOOTSTRAP_SERVERS = "kafka.${aws_service_discovery_private_dns_namespace.this.name}:9092"
-        KAFKA_TOPIC             = "vehicle-data-topic"
-        DISPATCH_SERVICE_URL    = "http://${aws_lb.this.dns_name}"
+        BARO_ERROR_INCLUDE_DETAILS = "true"
+        MQTT_MODE                  = "aws"
+        IOT_ENDPOINT               = "a7xnpqbtrafiw-ats.iot.ap-northeast-2.amazonaws.com"
+        IOT_CA_PATH                = "certs/AmazonRootCA1.pem"
+        IOT_CERT_PATH              = "certs/5647e867d2841c19a463402ca6e2c7fce6fde3a45c35c250087dda79a985a0f1-certificate.pem.crt"
+        IOT_KEY_PATH               = "certs/5647e867d2841c19a463402ca6e2c7fce6fde3a45c35c250087dda79a985a0f1-private.pem.key"
+        KAFKA_BOOTSTRAP_SERVERS    = "kafka.${aws_service_discovery_private_dns_namespace.this.name}:9092"
+        KAFKA_TOPIC                = "vehicle-data-topic"
+        DISPATCH_SERVICE_URL       = "http://${aws_lb.this.dns_name}"
       }
       secret_names = ["DB_URL", "DB_USERNAME", "DB_PASSWORD"]
     }
@@ -35,6 +36,7 @@ locals {
       path_patterns     = ["/dispatch", "/dispatch/*"]
       health_check_path = "/actuator/health"
       extra_environment = {
+        BARO_ERROR_INCLUDE_DETAILS    = "true"
         SPRING_JPA_HIBERNATE_DDL_AUTO = "update"
         SPRINGDOC_API_DOCS_PATH       = "/dispatch/api-docs"
         SPRINGDOC_SWAGGER_UI_PATH     = "/dispatch/swagger-ui.html"
@@ -53,8 +55,10 @@ locals {
       priority          = 103
       path_patterns     = ["/relocation", "/relocation/*"]
       health_check_path = "/actuator/health"
-      extra_environment = {}
-      secret_names      = []
+      extra_environment = {
+        BARO_ERROR_INCLUDE_DETAILS = "true"
+      }
+      secret_names = []
     }
 
     user = {
@@ -64,6 +68,7 @@ locals {
       path_patterns     = ["/user", "/user/*"]
       health_check_path = "/actuator/health"
       extra_environment = {
+        BARO_ERROR_INCLUDE_DETAILS           = "true"
         JWT_ACCESS_TOKEN_EXPIRATION_SECONDS  = "3600"
         JWT_REFRESH_TOKEN_EXPIRATION_SECONDS = "1209600"
         SPRING_JPA_HIBERNATE_DDL_AUTO        = "update"
