@@ -20,13 +20,13 @@ locals {
         MQTT_MODE                  = "aws"
         IOT_ENDPOINT               = "a7xnpqbtrafiw-ats.iot.ap-northeast-2.amazonaws.com"
         IOT_CA_PATH                = "certs/AmazonRootCA1.pem"
-        IOT_CERT_PATH              = "certs/5647e867d2841c19a463402ca6e2c7fce6fde3a45c35c250087dda79a985a0f1-certificate.pem.crt"
-        IOT_KEY_PATH               = "certs/5647e867d2841c19a463402ca6e2c7fce6fde3a45c35c250087dda79a985a0f1-private.pem.key"
+        IOT_CERT_PATH              = "certs/cert.pem.crt"
+        IOT_KEY_PATH               = "certs/private.pem.key"
         KAFKA_BOOTSTRAP_SERVERS    = "kafka.${aws_service_discovery_private_dns_namespace.this.name}:9092"
         KAFKA_TOPIC                = "vehicle-data-topic"
         DISPATCH_SERVICE_URL       = "http://${aws_lb.this.dns_name}"
       }
-      secret_names = ["DB_URL", "DB_USERNAME", "DB_PASSWORD"]
+      secret_names = ["DB_URL", "DB_USERNAME", "DB_PASSWORD", "IOT_CA_CERT", "IOT_CERT", "IOT_KEY"]
     }
 
     dispatch = {
