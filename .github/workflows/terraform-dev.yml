@@ -48,6 +48,7 @@ env:
   AWS_REGION: ap-northeast-2
   TF_IN_AUTOMATION: true
   TF_INPUT: false
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   terraform:
