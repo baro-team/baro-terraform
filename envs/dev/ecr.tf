@@ -15,7 +15,7 @@ resource "aws_ecr_repository" "service" {
 }
 
 data "aws_ecr_repository" "kafka" {
-  name = "baro-kafka-broker"
+  name = "${var.project}-kafka-broker"
 }
 
 resource "aws_ecr_lifecycle_policy" "service" {
