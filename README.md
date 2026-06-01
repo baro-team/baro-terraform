@@ -11,7 +11,8 @@
 - ECR repositories
 - ECS cluster and Fargate services
 - Single private RDS PostgreSQL instance
-- Public ALB with path-based routing
+- Public ALB with HTTPS and path-based routing
+- Route 53 alias and ACM certificate for `dev.barocloud.com`
 - CloudWatch log groups
 - Secrets Manager entries
 
@@ -38,14 +39,14 @@
 
 Swagger URLs:
 
-- User: `http://baro-dev-1701378146.ap-northeast-2.elb.amazonaws.com/swagger-ui.html`
-- Dispatch: `http://baro-dev-1701378146.ap-northeast-2.elb.amazonaws.com/dispatch/swagger-ui.html`
+- User: `https://dev.barocloud.com/swagger-ui.html`
+- Dispatch: `https://dev.barocloud.com/dispatch/swagger-ui.html`
 
 Service base URLs:
 
-- User auth: `http://baro-dev-1701378146.ap-northeast-2.elb.amazonaws.com/auth`
-- User: `http://baro-dev-1701378146.ap-northeast-2.elb.amazonaws.com/users`
-- Dispatch: `http://baro-dev-1701378146.ap-northeast-2.elb.amazonaws.com/dispatch`
+- User auth: `https://dev.barocloud.com/auth`
+- User: `https://dev.barocloud.com/users`
+- Dispatch: `https://dev.barocloud.com/dispatch`
 
 ## 운영 방식
 

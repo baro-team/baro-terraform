@@ -1,5 +1,6 @@
 locals {
-  name_prefix = "${var.project}-${var.environment}"
+  name_prefix     = "${var.project}-${var.environment}"
+  app_domain_name = var.app_domain_name != "" ? var.app_domain_name : "${var.environment}.${var.domain_name}"
 
   common_tags = {
     Project     = var.project

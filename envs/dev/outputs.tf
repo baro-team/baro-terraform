@@ -3,6 +3,16 @@ output "alb_dns_name" {
   value       = aws_lb.this.dns_name
 }
 
+output "app_domain_name" {
+  description = "Stable dev application domain name."
+  value       = local.app_domain_name
+}
+
+output "app_url" {
+  description = "Stable HTTPS dev application URL."
+  value       = "https://${local.app_domain_name}"
+}
+
 output "ecs_cluster_name" {
   description = "ECS cluster name."
   value       = aws_ecs_cluster.this.name
