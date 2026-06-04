@@ -61,8 +61,26 @@ resource "aws_ecs_task_definition" "service" {
         ],
         each.key == "dispatch" ? [
           {
+            name      = "DISPATCH_DB_USERNAME"
+            valueFrom = "${aws_secretsmanager_secret.rds_master.arn}:username::"
+          },
+          {
+            name      = "DISPATCH_DB_PASSWORD"
+            valueFrom = "${aws_secretsmanager_secret.rds_master.arn}:password::"
+          },
+          {
             name      = "JWT_SECRET"
             valueFrom = aws_secretsmanager_secret.service["user/JWT_SECRET"].arn
+          }
+        ] : [],
+        each.key == "user" ? [
+          {
+            name      = "USER_DB_USERNAME"
+            valueFrom = "${aws_secretsmanager_secret.rds_master.arn}:username::"
+          },
+          {
+            name      = "USER_DB_PASSWORD"
+            valueFrom = "${aws_secretsmanager_secret.rds_master.arn}:password::"
           }
         ] : []
       )

@@ -45,8 +45,6 @@ locals {
       }
       secret_names = [
         "DISPATCH_DB_URL",
-        "DISPATCH_DB_USERNAME",
-        "DISPATCH_DB_PASSWORD",
         "KAKAO_MOBILITY_API_KEY"
       ]
     }
@@ -79,8 +77,6 @@ locals {
       }
       secret_names = [
         "USER_DB_URL",
-        "USER_DB_USERNAME",
-        "USER_DB_PASSWORD",
         "JWT_SECRET"
       ]
     }
