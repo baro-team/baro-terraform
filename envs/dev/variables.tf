@@ -132,6 +132,12 @@ variable "rds_master_username" {
   default     = "baroadmin"
 }
 
+variable "bastion_instance_type" {
+  description = "EC2 instance type for the SSM-only RDS bastion."
+  type        = string
+  default     = "t4g.nano"
+}
+
 variable "onprem_cidr" {
   description = "On-premises network CIDR routed through Site-to-Site VPN."
   type        = string
