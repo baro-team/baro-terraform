@@ -1,6 +1,6 @@
 resource "aws_elasticache_subnet_group" "redis" {
   name       = "${local.name_prefix}-redis"
-  subnet_ids = [values(aws_subnet.private)[0].id]
+  subnet_ids = [for subnet in aws_subnet.private : subnet.id]
 
   tags = local.common_tags
 }

@@ -17,7 +17,7 @@ resource "aws_ecs_task_definition" "geo_consumer" {
   container_definitions = jsonencode([
     {
       name      = "vehicle-geo-consumer"
-      image     = "${data.aws_ecr_repository.baro_kafka_consumer.repository_url}:latest"
+      image     = "${data.aws_ecr_repository.baro_kafka_consumer.repository_url}:${var.image_tag}"
       essential = true
 
       environment = [
@@ -52,7 +52,7 @@ resource "aws_ecs_service" "geo_consumer" {
   launch_type     = "FARGATE"
 
   deployment_minimum_healthy_percent = 0
-  deployment_maximum_percent         = 100
+  deployment_maximum_percent         = 200
   enable_execute_command             = true
 
   network_configuration {
