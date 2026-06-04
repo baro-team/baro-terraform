@@ -44,12 +44,12 @@ output "rds_master_secret_name" {
 }
 
 output "user_service_jdbc_url" {
-  description = "JDBC URL you can put into baro-dev/user/USER_DB_URL. Add currentSchema if your app migrations use schemas."
+  description = "User service JDBC URL with currentSchema=user_service."
   value       = "jdbc:postgresql://${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${aws_db_instance.postgres.db_name}?currentSchema=user_service"
 }
 
 output "dispatch_service_jdbc_url" {
-  description = "JDBC URL automatically stored in baro-dev/dispatch/DISPATCH_DB_URL."
+  description = "Dispatch service JDBC URL with currentSchema=dispatch_service."
   value       = "jdbc:postgresql://${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${aws_db_instance.postgres.db_name}?currentSchema=dispatch_service"
 }
 

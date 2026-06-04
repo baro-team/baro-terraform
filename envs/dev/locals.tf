@@ -42,9 +42,9 @@ locals {
         SPRINGDOC_SWAGGER_UI_PATH     = "/dispatch/swagger-ui.html"
         REDIS_HOST                    = aws_elasticache_cluster.redis.cache_nodes[0].address
         REDIS_PORT                    = "6379"
+        DISPATCH_DB_URL               = "jdbc:postgresql://${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${aws_db_instance.postgres.db_name}?currentSchema=dispatch_service"
       }
       secret_names = [
-        "DISPATCH_DB_URL",
         "KAKAO_MOBILITY_API_KEY"
       ]
     }
@@ -74,9 +74,9 @@ locals {
         SPRING_JPA_HIBERNATE_DDL_AUTO        = "update"
         SPRINGDOC_API_DOCS_PATH              = "/user/api-docs"
         SPRINGDOC_SWAGGER_UI_PATH            = "/user/swagger-ui.html"
+        USER_DB_URL                          = "jdbc:postgresql://${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${aws_db_instance.postgres.db_name}?currentSchema=user_service"
       }
       secret_names = [
-        "USER_DB_URL",
         "JWT_SECRET"
       ]
     }
