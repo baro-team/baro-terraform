@@ -50,7 +50,7 @@ resource "aws_security_group" "ecs_tasks" {
 
 resource "aws_security_group" "kafka" {
   name        = "${local.name_prefix}-kafka"
-  description = "Allow Kafka from ECS tasks and on-premises VPN"
+  description = "Allow Kafka from ECS tasks, EC2 instance, and on-premises VPN"
   vpc_id      = aws_vpc.this.id
 
   ingress {
