@@ -72,3 +72,18 @@ output "redis_host" {
   description = "ElastiCache Redis endpoint for vehicle GEO cache."
   value       = aws_elasticache_cluster.redis.cache_nodes[0].address
 }
+
+output "bastion_instance_id" {
+  description = "SSM bastion EC2 instance ID for RDS port forwarding."
+  value       = aws_instance.bastion.id
+}
+
+output "bastion_private_ip" {
+  description = "Private IP of the SSM bastion EC2 instance."
+  value       = aws_instance.bastion.private_ip
+}
+
+output "bastion_security_group_id" {
+  description = "Security group ID for the SSM bastion EC2 instance."
+  value       = aws_security_group.bastion.id
+}
