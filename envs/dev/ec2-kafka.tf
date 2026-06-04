@@ -45,6 +45,25 @@ resource "aws_iam_instance_profile" "kafka_ec2" {
   role = aws_iam_role.kafka_ec2.name
 }
 
+# ── EBS (인스턴스와 분리 관리 — 재생성 시 데이터 유지) ───────────────────────
+
+resource "aws_ebs_volume" "kafka_data" {
+  availability_zone = values(aws_subnet.private)[0].availability_zone
+  size              = 20
+  type              = "gp3"
+  encrypted         = true
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-kafka-data"
+  })
+}
+
+resource "aws_volume_attachment" "kafka_data" {
+  device_name = "/dev/sdf"
+  volume_id   = aws_ebs_volume.kafka_data.id
+  instance_id = aws_instance.kafka.id
+}
+
 # ── EC2 ──────────────────────────────────────────────────────────────────────
 
 resource "aws_instance" "kafka" {
@@ -54,14 +73,6 @@ resource "aws_instance" "kafka" {
   vpc_security_group_ids = [aws_security_group.kafka.id]
   iam_instance_profile   = aws_iam_instance_profile.kafka_ec2.name
 
-  ebs_block_device {
-    device_name           = "/dev/sdf"
-    volume_size           = 20
-    volume_type           = "gp3"
-    delete_on_termination = false
-    encrypted             = true
-  }
-
   user_data = base64encode(<<-USERDATA
     #!/bin/bash
     set -e
@@ -69,7 +80,12 @@ resource "aws_instance" "kafka" {
     dnf install -y docker
     systemctl enable --now docker
 
-    # /dev/sdf appears as /dev/nvme1n1 on Nitro instances
+    # aws_volume_attachment는 비동기로 붙으므로 디바이스가 준비될 때까지 대기
+    while [ ! -b /dev/nvme1n1 ]; do
+      echo "Waiting for /dev/nvme1n1 to be attached..."
+      sleep 5
+    done
+
     if ! blkid /dev/nvme1n1; then
       mkfs.ext4 /dev/nvme1n1
     fi
@@ -88,7 +104,7 @@ resource "aws_instance" "kafka" {
       -e KAFKA_NODE_ID=1 \
       -e KAFKA_PROCESS_ROLES=broker,controller \
       -e KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093 \
-      -e KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka.baro.internal:9092 \
+      -e KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka.${aws_service_discovery_private_dns_namespace.this.name}:9092 \
       -e KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT \
       -e KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT \
       -e KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER \
