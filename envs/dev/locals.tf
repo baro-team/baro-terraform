@@ -92,7 +92,7 @@ locals {
       container_port    = 80
       priority          = 110
       path_patterns     = ["/admin", "/admin/*"]
-      health_check_path = "/admin/"
+      health_check_path = "/health"
       extra_environment = {}
       secret_names      = []
     }
