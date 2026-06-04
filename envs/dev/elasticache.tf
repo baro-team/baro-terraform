@@ -13,6 +13,8 @@ resource "aws_elasticache_replication_group" "redis" {
   node_type                  = "cache.t4g.micro"
   num_cache_clusters         = 1
   automatic_failover_enabled = false
+  at_rest_encryption_enabled = true
+  apply_immediately          = true
   parameter_group_name       = "default.valkey7"
   port                       = 6379
   subnet_group_name          = aws_elasticache_subnet_group.redis.name
