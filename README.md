@@ -3,6 +3,29 @@
 `baro-server`를 AWS dev 환경에 배포하기 위한 Terraform 저장소입니다.  
 현재 dev 환경은 ECS on Fargate, private RDS, Kafka EC2, ElastiCache Valkey를 중심으로 구성합니다.
 
+## 목차
+
+- [Dev stack](#dev-stack)
+- [Services](#services)
+- [Dev URLs](#dev-urls)
+- [주요 내부 엔드포인트](#주요-내부-엔드포인트)
+- [Service environment and secrets](#service-environment-and-secrets)
+  - [control-service](#control-service)
+  - [dispatch-service](#dispatch-service)
+  - [user-service](#user-service)
+- [RDS layout](#rds-layout)
+  - [RDS 접속 방식](#rds-접속-방식)
+- [ElastiCache Valkey](#elasticache-valkey)
+- [Kafka](#kafka)
+- [Secrets](#secrets)
+- [Terraform GitHub Actions](#terraform-github-actions)
+  - [Destroy safety](#destroy-safety)
+- [Remote state](#remote-state)
+- [로컬에서 Terraform을 실행해야 할 때](#로컬에서-terraform을-실행해야-할-때)
+- [ECS desired count](#ecs-desired-count)
+- [baro-server 배포 workflow](#baro-server-배포-workflow)
+- [Terraform과 application deploy의 역할 분리](#terraform과-application-deploy의-역할-분리)
+
 ## Dev stack
 
 현재 dev 환경은 아래 리소스를 생성/관리합니다.
@@ -44,15 +67,14 @@ enabled_services = ["user", "dispatch", "control"]
 
 Swagger URLs:
 
-- User: `https://dev.barocloud.com/user/swagger-ui.html`
-- Dispatch: `https://dev.barocloud.com/dispatch/swagger-ui.html`
+- User: https://dev.barocloud.com/user/swagger-ui.html
+- Dispatch: https://dev.barocloud.com/dispatch/swagger-ui.html
 
 Service base URLs:
 
-- Control: `https://dev.barocloud.com/control`
-- Dispatch: `https://dev.barocloud.com/dispatch`
-- User auth: `https://dev.barocloud.com/user/auth`
-- User: `https://dev.barocloud.com/user/users`
+- Control: https://dev.barocloud.com/control
+- Dispatch: https://dev.barocloud.com/dispatch
+- User: https://dev.barocloud.com/user/users
 
 ## 주요 내부 엔드포인트
 
