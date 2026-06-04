@@ -79,7 +79,7 @@ variable "service_memory" {
 variable "enabled_services" {
   description = "Services to create in dev."
   type        = set(string)
-  default     = ["user", "dispatch", "control"]
+  default     = ["user", "dispatch", "control", "admin"]
 
   validation {
     condition     = alltrue([for service in var.enabled_services : contains(["control", "dispatch", "relocation", "user", "admin"], service)])
