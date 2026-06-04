@@ -82,8 +82,8 @@ variable "enabled_services" {
   default     = ["user", "dispatch", "control"]
 
   validation {
-    condition     = alltrue([for service in var.enabled_services : contains(["control", "dispatch", "relocation", "user"], service)])
-    error_message = "enabled_services must contain only: control, dispatch, relocation, user."
+    condition     = alltrue([for service in var.enabled_services : contains(["control", "dispatch", "relocation", "user", "admin"], service)])
+    error_message = "enabled_services must contain only: control, dispatch, relocation, user, admin."
   }
 }
 
