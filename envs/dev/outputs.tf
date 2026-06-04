@@ -67,3 +67,8 @@ output "ecs_tasks_security_group_id" {
   description = "Security group ID for ECS tasks."
   value       = aws_security_group.ecs_tasks.id
 }
+
+output "redis_host" {
+  description = "ElastiCache Redis endpoint for vehicle GEO cache."
+  value       = aws_elasticache_cluster.redis.cache_nodes[0].address
+}

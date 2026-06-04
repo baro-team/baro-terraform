@@ -81,6 +81,30 @@ resource "aws_security_group" "kafka" {
   }
 }
 
+resource "aws_security_group" "redis" {
+  name        = "${local.name_prefix}-redis"
+  description = "Redis access from ECS tasks"
+  vpc_id      = aws_vpc.this.id
+
+  ingress {
+    description     = "Redis from ECS tasks"
+    from_port       = 6379
+    to_port         = 6379
+    protocol        = "tcp"
+    security_groups = [aws_security_group.ecs_tasks.id]
+  }
+
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = local.common_tags
+}
+
 resource "aws_security_group_rule" "alb_to_tasks" {
   for_each = local.services
 

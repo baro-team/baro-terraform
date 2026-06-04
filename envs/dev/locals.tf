@@ -40,6 +40,10 @@ locals {
         SPRING_JPA_HIBERNATE_DDL_AUTO = "update"
         SPRINGDOC_API_DOCS_PATH       = "/dispatch/api-docs"
         SPRINGDOC_SWAGGER_UI_PATH     = "/dispatch/swagger-ui.html"
+        REDIS_HOST                    = aws_elasticache_cluster.redis.cache_nodes[0].address
+        REDIS_PORT                    = "6379"
+        KAFKA_BOOTSTRAP_SERVERS       = "kafka.${aws_service_discovery_private_dns_namespace.this.name}:9092"
+        KAFKA_DISPATCH_EVENTS_TOPIC   = "dispatch-events-topic"
       }
       secret_names = [
         "DISPATCH_DB_URL",
