@@ -36,13 +36,16 @@ locals {
       path_patterns     = ["/dispatch", "/dispatch/*"]
       health_check_path = "/actuator/health"
       extra_environment = {
-        BARO_ERROR_INCLUDE_DETAILS    = "true"
-        SPRING_JPA_HIBERNATE_DDL_AUTO = "update"
-        SPRINGDOC_API_DOCS_PATH       = "/dispatch/api-docs"
-        SPRINGDOC_SWAGGER_UI_PATH     = "/dispatch/swagger-ui.html"
-        REDIS_HOST                    = aws_elasticache_cluster.redis.cache_nodes[0].address
-        REDIS_PORT                    = "6379"
-        DISPATCH_DB_URL               = "jdbc:postgresql://${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${aws_db_instance.postgres.db_name}?currentSchema=dispatch_service"
+        BARO_ERROR_INCLUDE_DETAILS       = "true"
+        SPRING_JPA_HIBERNATE_DDL_AUTO    = "update"
+        SPRINGDOC_API_DOCS_PATH          = "/dispatch/api-docs"
+        SPRINGDOC_SWAGGER_UI_PATH        = "/dispatch/swagger-ui.html"
+        REDIS_HOST                       = aws_elasticache_cluster.redis.cache_nodes[0].address
+        REDIS_PORT                       = "6379"
+        DISPATCH_DB_URL                  = "jdbc:postgresql://${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${aws_db_instance.postgres.db_name}?currentSchema=dispatch_service"
+        KAFKA_BOOTSTRAP_SERVERS          = "kafka.${aws_service_discovery_private_dns_namespace.this.name}:9092"
+        KAFKA_DISPATCH_CONSUMER_GROUP_ID = "dispatch-service"
+        KAFKA_VEHICLE_DATA_TOPIC         = "vehicle-data-topic"
       }
       secret_names = [
         "KAKAO_MOBILITY_API_KEY"
