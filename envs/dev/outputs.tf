@@ -69,8 +69,13 @@ output "ecs_tasks_security_group_id" {
 }
 
 output "redis_host" {
-  description = "ElastiCache Redis endpoint for vehicle GEO cache."
-  value       = aws_elasticache_cluster.redis.cache_nodes[0].address
+  description = "ElastiCache Valkey endpoint for vehicle GEO cache."
+  value       = aws_elasticache_replication_group.redis.primary_endpoint_address
+}
+
+output "redis_port" {
+  description = "ElastiCache Valkey port for vehicle GEO cache."
+  value       = aws_elasticache_replication_group.redis.port
 }
 
 output "bastion_instance_id" {
