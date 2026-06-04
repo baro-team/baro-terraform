@@ -83,6 +83,16 @@ locals {
         "JWT_SECRET"
       ]
     }
+
+    admin = {
+      module            = "baro-admin"
+      container_port    = 80
+      priority          = 110
+      path_patterns     = ["/admin", "/admin/*"]
+      health_check_path = "/admin/"
+      extra_environment = {}
+      secret_names      = []
+    }
   }
 
   services = {

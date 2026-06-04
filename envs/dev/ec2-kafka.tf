@@ -98,6 +98,7 @@ resource "aws_instance" "kafka" {
       docker login --username AWS --password-stdin ${data.aws_ecr_repository.kafka.repository_url}
 
     docker run -d --name kafka --restart unless-stopped \
+      --entrypoint /etc/confluent/docker/run \
       -p 9092:9092 \
       -p 9093:9093 \
       -v /var/kafka-data:/var/kafka-data \
