@@ -37,14 +37,6 @@ resource "aws_acm_certificate_validation" "alb" {
   validation_record_fqdns = [for record in aws_route53_record.alb_certificate_validation : record.fqdn]
 }
 
-resource "aws_route53_record" "kafka_internal" {
-  zone_id = aws_service_discovery_private_dns_namespace.this.hosted_zone
-  name    = "kafka.${aws_service_discovery_private_dns_namespace.this.name}"
-  type    = "A"
-  ttl     = 60
-  records = [aws_instance.kafka.private_ip]
-}
-
 resource "aws_route53_record" "app" {
   zone_id = data.aws_route53_zone.this.zone_id
   name    = local.app_domain_name
