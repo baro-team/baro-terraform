@@ -4,7 +4,7 @@ data "aws_ami" "amazon_linux_2023_arm64" {
 
   filter {
     name   = "name"
-    values = ["al2023-ami-*-arm64"]
+    values = ["al2023-ami-kernel-*-arm64"]
   }
 
   filter {
@@ -42,7 +42,7 @@ resource "aws_iam_instance_profile" "bastion_ec2" {
 resource "aws_instance" "bastion" {
   ami                         = data.aws_ami.amazon_linux_2023_arm64.id
   instance_type               = var.bastion_instance_type
-  subnet_id                   = values(aws_subnet.private)[0].id
+  subnet_id                   = aws_subnet.private["0"].id
   vpc_security_group_ids      = [aws_security_group.bastion.id]
   iam_instance_profile        = aws_iam_instance_profile.bastion_ec2.name
   associate_public_ip_address = false
