@@ -105,6 +105,23 @@ resource "aws_security_group" "redis" {
   tags = local.common_tags
 }
 
+resource "aws_security_group" "bastion" {
+  name        = "${local.name_prefix}-bastion"
+  description = "SSM-only bastion for private RDS access"
+  vpc_id      = aws_vpc.this.id
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-bastion"
+  })
+}
+
 resource "aws_security_group_rule" "alb_to_tasks" {
   for_each = local.services
 

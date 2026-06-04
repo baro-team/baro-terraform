@@ -44,12 +44,12 @@ output "rds_master_secret_name" {
 }
 
 output "user_service_jdbc_url" {
-  description = "JDBC URL you can put into baro-dev/user/USER_DB_URL. Add currentSchema if your app migrations use schemas."
+  description = "User service JDBC URL with currentSchema=user_service."
   value       = "jdbc:postgresql://${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${aws_db_instance.postgres.db_name}?currentSchema=user_service"
 }
 
 output "dispatch_service_jdbc_url" {
-  description = "JDBC URL automatically stored in baro-dev/dispatch/DISPATCH_DB_URL."
+  description = "Dispatch service JDBC URL with currentSchema=dispatch_service."
   value       = "jdbc:postgresql://${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${aws_db_instance.postgres.db_name}?currentSchema=dispatch_service"
 }
 
@@ -71,4 +71,19 @@ output "ecs_tasks_security_group_id" {
 output "redis_host" {
   description = "ElastiCache Redis endpoint for vehicle GEO cache."
   value       = aws_elasticache_cluster.redis.cache_nodes[0].address
+}
+
+output "bastion_instance_id" {
+  description = "SSM bastion EC2 instance ID for RDS port forwarding."
+  value       = aws_instance.bastion.id
+}
+
+output "bastion_private_ip" {
+  description = "Private IP of the SSM bastion EC2 instance."
+  value       = aws_instance.bastion.private_ip
+}
+
+output "bastion_security_group_id" {
+  description = "Security group ID for the SSM bastion EC2 instance."
+  value       = aws_security_group.bastion.id
 }
