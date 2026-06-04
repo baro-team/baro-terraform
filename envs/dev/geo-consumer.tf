@@ -26,6 +26,7 @@ resource "aws_ecs_task_definition" "geo_consumer" {
         { name = "KAFKA_TOPIC", value = "vehicle-data-topic" },
         { name = "TIMESCALEDB_CONSUMER_ENABLED", value = "false" },
         { name = "GEO_CONSUMER_ENABLED", value = "true" },
+        { name = "SPRING_AUTOCONFIGURE_EXCLUDE", value = "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration,org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration,org.springframework.boot.autoconfigure.sql.init.SqlInitializationAutoConfiguration" },
         { name = "REDIS_HOST", value = aws_elasticache_cluster.redis.cache_nodes[0].address },
         { name = "REDIS_PORT", value = "6379" },
       ]
