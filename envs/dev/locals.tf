@@ -26,7 +26,7 @@ locals {
         KAFKA_TOPIC                = "vehicle-data-topic"
         DISPATCH_SERVICE_URL       = "http://${aws_lb.this.dns_name}"
       }
-      secret_names = ["DB_URL", "DB_USERNAME", "DB_PASSWORD", "IOT_CA_CERT", "IOT_CERT", "IOT_KEY"]
+      secret_names = ["IOT_CA_CERT", "IOT_CERT", "IOT_KEY"]
     }
 
     dispatch = {
