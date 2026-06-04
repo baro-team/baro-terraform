@@ -21,13 +21,13 @@ resource "aws_ecs_task_definition" "geo_consumer" {
       essential = true
 
       environment = [
-        { name = "KAFKA_BOOTSTRAP_SERVERS",    value = "kafka.${aws_service_discovery_private_dns_namespace.this.name}:9092" },
-        { name = "KAFKA_GROUP_ID",             value = "baro-geo-consumer-group" },
-        { name = "KAFKA_TOPIC",                value = "vehicle-data-topic" },
+        { name = "KAFKA_BOOTSTRAP_SERVERS", value = "kafka.${aws_service_discovery_private_dns_namespace.this.name}:9092" },
+        { name = "KAFKA_GROUP_ID", value = "baro-geo-consumer-group" },
+        { name = "KAFKA_TOPIC", value = "vehicle-data-topic" },
         { name = "TIMESCALEDB_CONSUMER_ENABLED", value = "false" },
-        { name = "GEO_CONSUMER_ENABLED",       value = "true" },
-        { name = "REDIS_HOST",                 value = aws_elasticache_cluster.redis.cache_nodes[0].address },
-        { name = "REDIS_PORT",                 value = "6379" },
+        { name = "GEO_CONSUMER_ENABLED", value = "true" },
+        { name = "REDIS_HOST", value = aws_elasticache_cluster.redis.cache_nodes[0].address },
+        { name = "REDIS_PORT", value = "6379" },
       ]
 
       logConfiguration = {
