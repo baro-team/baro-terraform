@@ -20,7 +20,7 @@ resource "aws_service_discovery_service" "kafka" {
 }
 
 resource "aws_service_discovery_instance" "kafka" {
-  instance_id = "kafka-ec2"
+  instance_id = aws_instance.kafka.id
   service_id  = aws_service_discovery_service.kafka.id
 
   attributes = {
