@@ -62,9 +62,14 @@ locals {
       path_patterns     = ["/relocation", "/relocation/*"]
       health_check_path = "/actuator/health"
       extra_environment = {
-        BARO_ERROR_INCLUDE_DETAILS = "true"
+        BARO_ERROR_INCLUDE_DETAILS    = "true"
+        SPRING_JPA_HIBERNATE_DDL_AUTO = "update"
       }
-      secret_names = []
+      secret_names = [
+        "RELOCATION_DB_URL",
+        "RELOCATION_DB_USERNAME",
+        "RELOCATION_DB_PASSWORD"
+      ]
     }
 
     user = {
