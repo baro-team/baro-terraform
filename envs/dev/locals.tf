@@ -105,7 +105,7 @@ locals {
     mobile = {
       module            = "baro-mobile"
       container_port    = 80
-      priority          = 200
+      priority          = 9999
       path_patterns     = ["/*"]
       health_check_path = "/health"
       extra_environment = {
