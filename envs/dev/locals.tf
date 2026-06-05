@@ -65,7 +65,7 @@ locals {
         BARO_ERROR_INCLUDE_DETAILS    = "true"
         SPRING_JPA_HIBERNATE_DDL_AUTO = "update"
       }
-      secret_names      = [
+      secret_names = [
         "RELOCATION_DB_URL",
         "RELOCATION_DB_USERNAME",
         "RELOCATION_DB_PASSWORD"
