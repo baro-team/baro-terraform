@@ -208,3 +208,24 @@ resource "aws_ecs_task_definition" "db_init" {
     }
   ])
 }
+
+resource "aws_secretsmanager_secret_version" "relocation_db_url" {
+  count = contains(var.enabled_services, "relocation") ? 1 : 0
+
+  secret_id     = aws_secretsmanager_secret.service["relocation/RELOCATION_DB_URL"].id
+  secret_string = "jdbc:postgresql://${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${aws_db_instance.postgres.db_name}?currentSchema=relocation_service"
+}
+
+resource "aws_secretsmanager_secret_version" "relocation_db_username" {
+  count = contains(var.enabled_services, "relocation") ? 1 : 0
+
+  secret_id     = aws_secretsmanager_secret.service["relocation/RELOCATION_DB_USERNAME"].id
+  secret_string = aws_db_instance.postgres.username
+}
+
+resource "aws_secretsmanager_secret_version" "relocation_db_password" {
+  count = contains(var.enabled_services, "relocation") ? 1 : 0
+
+  secret_id     = aws_secretsmanager_secret.service["relocation/RELOCATION_DB_PASSWORD"].id
+  secret_string = random_password.rds_master.result
+}

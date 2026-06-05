@@ -51,8 +51,14 @@ locals {
       module            = "relocation-service"
       container_port    = 8083
       path_patterns     = ["/relocation", "/relocation/*"]
-      extra_environment = {}
-      secret_names      = []
+      extra_environment = {
+        SPRING_JPA_HIBERNATE_DDL_AUTO = "update"
+      }
+      secret_names      = [
+        "RELOCATION_DB_URL",
+        "RELOCATION_DB_USERNAME",
+        "RELOCATION_DB_PASSWORD"
+      ]
     }
 
     user = {
