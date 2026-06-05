@@ -49,6 +49,7 @@ locals {
         KAFKA_BOOTSTRAP_SERVERS                  = "kafka.${aws_service_discovery_private_dns_namespace.this.name}:9092"
         KAFKA_DISPATCH_CONSUMER_GROUP_ID         = "dispatch-service"
         KAFKA_VEHICLE_DATA_TOPIC                 = "vehicle-data-topic"
+        CONTROL_SERVICE_URL                      = "http://${aws_lb.this.dns_name}"
       }
       secret_names = [
         "KAKAO_MOBILITY_API_KEY"
