@@ -63,9 +63,14 @@ locals {
       path_patterns     = ["/relocation", "/relocation/*"]
       health_check_path = "/actuator/health"
       extra_environment = {
-        BARO_ERROR_INCLUDE_DETAILS = "true"
+        BARO_ERROR_INCLUDE_DETAILS    = "true"
+        SPRING_JPA_HIBERNATE_DDL_AUTO = "update"
       }
-      secret_names = []
+      secret_names = [
+        "RELOCATION_DB_URL",
+        "RELOCATION_DB_USERNAME",
+        "RELOCATION_DB_PASSWORD"
+      ]
     }
 
     user = {
@@ -96,6 +101,20 @@ locals {
       health_check_path = "/health"
       extra_environment = {}
       secret_names      = []
+    }
+
+    mobile = {
+      module            = "baro-mobile"
+      container_port    = 80
+      priority          = 9999
+      path_patterns     = ["/*"]
+      health_check_path = "/health"
+      extra_environment = {
+        BACKEND_API_BASE_URL = "https://${local.app_domain_name}"
+      }
+      secret_names = [
+        "KAKAO_REST_API_KEY"
+      ]
     }
   }
 
