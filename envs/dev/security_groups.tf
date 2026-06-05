@@ -123,13 +123,15 @@ resource "aws_security_group" "bastion" {
 }
 
 resource "aws_security_group_rule" "alb_to_tasks" {
-  for_each = local.services
+  for_each = toset([
+    for service in local.services : tostring(service.container_port)
+  ])
 
   type                     = "ingress"
   security_group_id        = aws_security_group.ecs_tasks.id
   source_security_group_id = aws_security_group.alb.id
-  from_port                = each.value.container_port
-  to_port                  = each.value.container_port
+  from_port                = tonumber(each.value)
+  to_port                  = tonumber(each.value)
   protocol                 = "tcp"
-  description              = "ALB to ${each.value.module}"
+  description              = "ALB to ECS tasks on port ${each.value}"
 }
