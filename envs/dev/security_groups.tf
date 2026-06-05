@@ -123,9 +123,9 @@ resource "aws_security_group" "bastion" {
 }
 
 resource "aws_security_group_rule" "alb_to_tasks" {
-  for_each = toset(distinct([
+  for_each = toset([
     for service in local.services : tostring(service.container_port)
-  ]))
+  ])
 
   type                     = "ingress"
   security_group_id        = aws_security_group.ecs_tasks.id
