@@ -101,6 +101,20 @@ locals {
       extra_environment = {}
       secret_names      = []
     }
+
+    mobile = {
+      module            = "baro-mobile"
+      container_port    = 80
+      priority          = 9999
+      path_patterns     = ["/*"]
+      health_check_path = "/health"
+      extra_environment = {
+        BACKEND_API_BASE_URL = "https://${local.app_domain_name}"
+      }
+      secret_names = [
+        "KAKAO_REST_API_KEY"
+      ]
+    }
   }
 
   services = {

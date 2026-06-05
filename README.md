@@ -52,16 +52,18 @@
 | --- | --- | ---: | --- | --- |
 | `control` | `control-service` | 8081 | `/control`, `/control/*` | yes |
 | `dispatch` | `dispatch-service` | 8082 | `/dispatch`, `/dispatch/*` | yes |
-| `relocation` | `relocation-service` | 8083 | `/relocation`, `/relocation/*` | no |
+| `relocation` | `relocation-service` | 8083 | `/relocation`, `/relocation/*` | yes |
 | `user` | `user-service` | 8084 | `/user`, `/user/*` | yes |
+| `admin` | `baro-admin` | 80 | `/admin`, `/admin/*` | yes |
+| `mobile` | `baro-mobile` | 80 | `/*` | yes |
 
 기본 `enabled_services`는 아래와 같습니다.
 
 ```hcl
-enabled_services = ["user", "dispatch", "control"]
+enabled_services = ["user", "dispatch", "control", "admin", "relocation", "mobile"]
 ```
 
-`relocation-service`는 Terraform 구조상 지원하지만 dev 기본 배포 대상은 아닙니다.
+`mobile`은 HTTPS listener의 catch-all rule로 등록되어 `/control`, `/dispatch`, `/user`, `/admin`, `/relocation` 등 더 높은 우선순위의 서비스 path를 제외한 웹 트래픽을 처리합니다.
 
 ## Dev URLs
 
@@ -75,6 +77,7 @@ Service base URLs:
 - Control: https://dev.barocloud.com/control
 - Dispatch: https://dev.barocloud.com/dispatch
 - User: https://dev.barocloud.com/user/users
+- Mobile web: https://dev.barocloud.com/
 
 ## 주요 내부 엔드포인트
 
@@ -141,6 +144,18 @@ Kafka는 ECS가 아니라 private EC2에서 실행되며, Cloud Map namespace를
 공유 secret 주입:
 
 - `USER_DB_USERNAME`, `USER_DB_PASSWORD`: `baro-dev/rds/master`에서 주입
+
+### mobile web
+
+주요 환경변수:
+
+- `BACKEND_API_BASE_URL=https://dev.barocloud.com`
+
+직접 채워야 하는 Secrets Manager 값:
+
+- `baro-dev/mobile/KAKAO_REST_API_KEY`
+
+`baro-mobile` 컨테이너는 정적 SPA를 nginx로 서빙하며, `/api/auth`, `/api/dispatch`, `/api/places/search` 요청을 런타임 nginx 프록시로 처리합니다.
 
 ## RDS layout
 
