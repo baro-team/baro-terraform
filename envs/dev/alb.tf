@@ -17,8 +17,8 @@ resource "aws_lb_target_group" "service" {
 
   health_check {
     enabled             = true
-    path                = "/actuator/health"
-    matcher             = "200-499"
+    path                = each.value.health_check_path
+    matcher             = "200"
     interval            = 30
     timeout             = 5
     healthy_threshold   = 2
@@ -64,7 +64,7 @@ resource "aws_lb_listener_rule" "service" {
   for_each = local.services
 
   listener_arn = aws_lb_listener.https.arn
-  priority     = 100 + index(keys(local.services), each.key)
+  priority     = each.value.priority
 
   action {
     type             = "forward"
@@ -74,30 +74,6 @@ resource "aws_lb_listener_rule" "service" {
   condition {
     path_pattern {
       values = each.value.path_patterns
-    }
-  }
-}
-
-resource "aws_lb_listener_rule" "user_docs" {
-  count = contains(var.enabled_services, "user") ? 1 : 0
-
-  listener_arn = aws_lb_listener.https.arn
-  priority     = 200
-
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.service["user"].arn
-  }
-
-  condition {
-    path_pattern {
-      values = [
-        "/swagger-ui.html",
-        "/swagger-ui/*",
-        "/api-docs",
-        "/api-docs/*",
-        "/v3/api-docs*",
-      ]
     }
   }
 }

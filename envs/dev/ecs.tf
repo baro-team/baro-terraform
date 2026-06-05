@@ -61,8 +61,26 @@ resource "aws_ecs_task_definition" "service" {
         ],
         each.key == "dispatch" ? [
           {
+            name      = "DISPATCH_DB_USERNAME"
+            valueFrom = "${aws_secretsmanager_secret.rds_master.arn}:username::"
+          },
+          {
+            name      = "DISPATCH_DB_PASSWORD"
+            valueFrom = "${aws_secretsmanager_secret.rds_master.arn}:password::"
+          },
+          {
             name      = "JWT_SECRET"
             valueFrom = aws_secretsmanager_secret.service["user/JWT_SECRET"].arn
+          }
+        ] : [],
+        each.key == "user" ? [
+          {
+            name      = "USER_DB_USERNAME"
+            valueFrom = "${aws_secretsmanager_secret.rds_master.arn}:username::"
+          },
+          {
+            name      = "USER_DB_PASSWORD"
+            valueFrom = "${aws_secretsmanager_secret.rds_master.arn}:password::"
           }
         ] : []
       )
@@ -77,99 +95,6 @@ resource "aws_ecs_task_definition" "service" {
       }
     }
   ])
-}
-
-resource "aws_cloudwatch_log_group" "kafka" {
-  name              = "/ecs/${local.name_prefix}/kafka"
-  retention_in_days = 14
-}
-
-resource "aws_ecs_task_definition" "kafka" {
-  family                   = "${local.name_prefix}-kafka"
-  requires_compatibilities = ["FARGATE"]
-  network_mode             = "awsvpc"
-  cpu                      = 1024
-  memory                   = 2048
-  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
-  task_role_arn            = aws_iam_role.ecs_task.arn
-
-  volume {
-    name = "kafka-data"
-    efs_volume_configuration {
-      file_system_id     = aws_efs_file_system.kafka.id
-      transit_encryption = "ENABLED"
-      authorization_config {
-        access_point_id = aws_efs_access_point.kafka.id
-        iam             = "ENABLED"
-      }
-    }
-  }
-
-  container_definitions = jsonencode([
-    {
-      name      = "kafka"
-      image     = "${aws_ecr_repository.kafka.repository_url}:${var.image_tag}"
-      essential = true
-
-      portMappings = [
-        { containerPort = 9092, hostPort = 9092, protocol = "tcp" },
-        { containerPort = 9093, hostPort = 9093, protocol = "tcp" }
-      ]
-
-      environment = [
-        { name = "KAFKA_NODE_ID",                                    value = "1" },
-        { name = "KAFKA_PROCESS_ROLES",                              value = "broker,controller" },
-        { name = "KAFKA_LISTENERS",                                  value = "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093" },
-        { name = "KAFKA_ADVERTISED_LISTENERS",                       value = "PLAINTEXT://kafka.baro.internal:9092" },
-        { name = "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP",             value = "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT" },
-        { name = "KAFKA_INTER_BROKER_LISTENER_NAME",                 value = "PLAINTEXT" },
-        { name = "KAFKA_CONTROLLER_LISTENER_NAMES",                  value = "CONTROLLER" },
-        { name = "KAFKA_CONTROLLER_QUORUM_VOTERS",                   value = "1@localhost:9093" },
-        { name = "KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR",           value = "1" },
-        { name = "KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR",   value = "1" },
-        { name = "KAFKA_TRANSACTION_STATE_LOG_MIN_ISR",              value = "1" },
-        { name = "CLUSTER_ID",                                       value = "MkU3OEVBNTcwNTJENDM2Qk" },
-        { name = "KAFKA_LOG_DIRS",                                   value = "/var/kafka-data" }
-      ]
-
-      mountPoints = [
-        { sourceVolume = "kafka-data", containerPath = "/var/kafka-data", readOnly = false }
-      ]
-
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          awslogs-group         = aws_cloudwatch_log_group.kafka.name
-          awslogs-region        = var.aws_region
-          awslogs-stream-prefix = "ecs"
-        }
-      }
-    }
-  ])
-}
-
-resource "aws_ecs_service" "kafka" {
-  name            = "${local.name_prefix}-kafka"
-  cluster         = aws_ecs_cluster.this.id
-  task_definition = aws_ecs_task_definition.kafka.arn
-  desired_count   = 1
-  launch_type     = "FARGATE"
-
-  deployment_minimum_healthy_percent = 0
-  deployment_maximum_percent         = 100
-  enable_execute_command             = true
-
-  network_configuration {
-    subnets          = [for subnet in aws_subnet.private : subnet.id]
-    security_groups  = [aws_security_group.kafka.id]
-    assign_public_ip = false
-  }
-
-  service_registries {
-    registry_arn = aws_service_discovery_service.kafka.arn
-  }
-
-  depends_on = [aws_efs_mount_target.kafka]
 }
 
 resource "aws_ecs_service" "service" {

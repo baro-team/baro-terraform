@@ -26,6 +26,14 @@ resource "aws_security_group" "rds" {
     security_groups = [aws_security_group.ecs_tasks.id]
   }
 
+  ingress {
+    description     = "PostgreSQL from SSM bastion"
+    from_port       = 5432
+    to_port         = 5432
+    protocol        = "tcp"
+    security_groups = [aws_security_group.bastion.id]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -89,69 +97,6 @@ resource "aws_secretsmanager_secret_version" "rds_master" {
     password = random_password.rds_master.result
     jdbc_url = "jdbc:postgresql://${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${aws_db_instance.postgres.db_name}"
   })
-}
-
-resource "aws_secretsmanager_secret_version" "user_db_url" {
-  count = contains(var.enabled_services, "user") ? 1 : 0
-
-  secret_id     = aws_secretsmanager_secret.service["user/USER_DB_URL"].id
-  secret_string = "jdbc:postgresql://${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${aws_db_instance.postgres.db_name}?currentSchema=user_service"
-}
-
-resource "aws_secretsmanager_secret_version" "user_db_username" {
-  count = contains(var.enabled_services, "user") ? 1 : 0
-
-  secret_id     = aws_secretsmanager_secret.service["user/USER_DB_USERNAME"].id
-  secret_string = aws_db_instance.postgres.username
-}
-
-resource "aws_secretsmanager_secret_version" "user_db_password" {
-  count = contains(var.enabled_services, "user") ? 1 : 0
-
-  secret_id     = aws_secretsmanager_secret.service["user/USER_DB_PASSWORD"].id
-  secret_string = random_password.rds_master.result
-}
-
-resource "aws_secretsmanager_secret_version" "dispatch_db_url" {
-  count = contains(var.enabled_services, "dispatch") ? 1 : 0
-
-  secret_id     = aws_secretsmanager_secret.service["dispatch/DISPATCH_DB_URL"].id
-  secret_string = "jdbc:postgresql://${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${aws_db_instance.postgres.db_name}?currentSchema=dispatch_service"
-}
-
-resource "aws_secretsmanager_secret_version" "dispatch_db_username" {
-  count = contains(var.enabled_services, "dispatch") ? 1 : 0
-
-  secret_id     = aws_secretsmanager_secret.service["dispatch/DISPATCH_DB_USERNAME"].id
-  secret_string = aws_db_instance.postgres.username
-}
-
-resource "aws_secretsmanager_secret_version" "dispatch_db_password" {
-  count = contains(var.enabled_services, "dispatch") ? 1 : 0
-
-  secret_id     = aws_secretsmanager_secret.service["dispatch/DISPATCH_DB_PASSWORD"].id
-  secret_string = random_password.rds_master.result
-}
-
-resource "aws_secretsmanager_secret_version" "control_db_url" {
-  count = contains(var.enabled_services, "control") ? 1 : 0
-
-  secret_id     = aws_secretsmanager_secret.service["control/DB_URL"].id
-  secret_string = "jdbc:postgresql://${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${aws_db_instance.postgres.db_name}?currentSchema=control_service"
-}
-
-resource "aws_secretsmanager_secret_version" "control_db_username" {
-  count = contains(var.enabled_services, "control") ? 1 : 0
-
-  secret_id     = aws_secretsmanager_secret.service["control/DB_USERNAME"].id
-  secret_string = aws_db_instance.postgres.username
-}
-
-resource "aws_secretsmanager_secret_version" "control_db_password" {
-  count = contains(var.enabled_services, "control") ? 1 : 0
-
-  secret_id     = aws_secretsmanager_secret.service["control/DB_PASSWORD"].id
-  secret_string = random_password.rds_master.result
 }
 
 resource "aws_cloudwatch_log_group" "db_init" {

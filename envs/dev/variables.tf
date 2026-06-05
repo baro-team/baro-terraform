@@ -79,11 +79,11 @@ variable "service_memory" {
 variable "enabled_services" {
   description = "Services to create in dev."
   type        = set(string)
-  default     = ["user", "dispatch", "control"]
+  default     = ["user", "dispatch", "control", "admin"]
 
   validation {
-    condition     = alltrue([for service in var.enabled_services : contains(["control", "dispatch", "relocation", "user"], service)])
-    error_message = "enabled_services must contain only: control, dispatch, relocation, user."
+    condition     = alltrue([for service in var.enabled_services : contains(["control", "dispatch", "relocation", "user", "admin"], service)])
+    error_message = "enabled_services must contain only: control, dispatch, relocation, user, admin."
   }
 }
 
@@ -130,6 +130,12 @@ variable "rds_master_username" {
   description = "Master username for the shared dev RDS instance."
   type        = string
   default     = "baroadmin"
+}
+
+variable "bastion_instance_type" {
+  description = "EC2 instance type for the SSM-only RDS bastion."
+  type        = string
+  default     = "t4g.nano"
 }
 
 variable "onprem_cidr" {

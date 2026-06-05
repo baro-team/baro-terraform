@@ -15,10 +15,16 @@ resource "aws_service_discovery_service" "kafka" {
       type = "A"
     }
 
-    routing_policy = "MULTIVALUE"
-  }
-
-  health_check_custom_config {
-    failure_threshold = 1
+    routing_policy = "WEIGHTED"
   }
 }
+
+resource "aws_service_discovery_instance" "kafka" {
+  instance_id = aws_instance.kafka.id
+  service_id  = aws_service_discovery_service.kafka.id
+
+  attributes = {
+    AWS_INSTANCE_IPV4 = aws_instance.kafka.private_ip
+  }
+}
+
