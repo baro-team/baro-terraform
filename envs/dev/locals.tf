@@ -24,7 +24,7 @@ locals {
         IOT_KEY_PATH               = "certs/private.pem.key"
         KAFKA_BOOTSTRAP_SERVERS    = "kafka.${aws_service_discovery_private_dns_namespace.this.name}:9092"
         KAFKA_TOPIC                = "vehicle-data-topic"
-        DISPATCH_SERVICE_URL       = "http://${aws_lb.this.dns_name}"
+        DISPATCH_SERVICE_URL       = "https://${local.app_domain_name}"
       }
       secret_names = ["IOT_CA_CERT", "IOT_CERT", "IOT_KEY"]
     }
@@ -49,7 +49,7 @@ locals {
         KAFKA_BOOTSTRAP_SERVERS                  = "kafka.${aws_service_discovery_private_dns_namespace.this.name}:9092"
         KAFKA_DISPATCH_CONSUMER_GROUP_ID         = "dispatch-service"
         KAFKA_VEHICLE_DATA_TOPIC                 = "vehicle-data-topic"
-        CONTROL_SERVICE_URL                      = "http://${aws_lb.this.dns_name}"
+        CONTROL_SERVICE_URL                      = "https://${local.app_domain_name}"
       }
       secret_names = [
         "KAKAO_MOBILITY_API_KEY"
