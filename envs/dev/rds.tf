@@ -5,6 +5,8 @@ resource "random_password" "rds_master" {
 }
 
 resource "aws_db_subnet_group" "this" {
+  count = var.runtime_enabled ? 1 : 0
+
   name       = local.name_prefix
   subnet_ids = [for subnet in aws_subnet.private : subnet.id]
 
@@ -14,6 +16,8 @@ resource "aws_db_subnet_group" "this" {
 }
 
 resource "aws_security_group" "rds" {
+  count = var.runtime_enabled ? 1 : 0
+
   name        = "${local.name_prefix}-rds"
   description = "Allow PostgreSQL from ECS tasks"
   vpc_id      = aws_vpc.this.id
@@ -47,6 +51,8 @@ resource "aws_security_group" "rds" {
 }
 
 resource "aws_db_instance" "postgres" {
+  count = var.runtime_enabled ? 1 : 0
+
   identifier = "${local.name_prefix}-postgres"
 
   engine         = "postgres"
@@ -62,8 +68,8 @@ resource "aws_db_instance" "postgres" {
   username = var.rds_master_username
   password = random_password.rds_master.result
 
-  db_subnet_group_name   = aws_db_subnet_group.this.name
-  vpc_security_group_ids = [aws_security_group.rds.id]
+  db_subnet_group_name   = aws_db_subnet_group.this[0].name
+  vpc_security_group_ids = [aws_security_group.rds[0].id]
   publicly_accessible    = false
 
   backup_retention_period = 1
@@ -90,13 +96,17 @@ resource "aws_secretsmanager_secret_version" "rds_master" {
 
   secret_string = jsonencode({
     engine   = "postgres"
-    host     = aws_db_instance.postgres.address
-    port     = aws_db_instance.postgres.port
-    dbname   = aws_db_instance.postgres.db_name
-    username = aws_db_instance.postgres.username
+    host     = var.runtime_enabled ? aws_db_instance.postgres[0].address : ""
+    port     = var.runtime_enabled ? aws_db_instance.postgres[0].port : 5432
+    dbname   = var.runtime_enabled ? aws_db_instance.postgres[0].db_name : var.rds_database_name
+    username = var.rds_master_username
     password = random_password.rds_master.result
-    jdbc_url = "jdbc:postgresql://${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${aws_db_instance.postgres.db_name}"
+    jdbc_url = var.runtime_enabled ? "jdbc:postgresql://${aws_db_instance.postgres[0].address}:${aws_db_instance.postgres[0].port}/${aws_db_instance.postgres[0].db_name}" : ""
   })
+
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
 }
 
 resource "aws_cloudwatch_log_group" "db_init" {
@@ -105,6 +115,8 @@ resource "aws_cloudwatch_log_group" "db_init" {
 }
 
 resource "aws_ecs_task_definition" "db_init" {
+  count = var.runtime_enabled ? 1 : 0
+
   family                   = "${local.name_prefix}-db-init"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
@@ -123,17 +135,17 @@ resource "aws_ecs_task_definition" "db_init" {
         "-c",
         join(" ", [
           "psql -v ON_ERROR_STOP=1",
-          "-h ${aws_db_instance.postgres.address}",
-          "-p ${aws_db_instance.postgres.port}",
-          "-U ${aws_db_instance.postgres.username}",
-          "-d ${aws_db_instance.postgres.db_name}",
+          "-h ${aws_db_instance.postgres[0].address}",
+          "-p ${aws_db_instance.postgres[0].port}",
+          "-U ${aws_db_instance.postgres[0].username}",
+          "-d ${aws_db_instance.postgres[0].db_name}",
           "-c \"CREATE SCHEMA IF NOT EXISTS user_service; CREATE SCHEMA IF NOT EXISTS dispatch_service; CREATE SCHEMA IF NOT EXISTS relocation_service; CREATE SCHEMA IF NOT EXISTS control_service;\""
         ])
       ]
       environment = [
         {
           name  = "PGDATABASE"
-          value = aws_db_instance.postgres.db_name
+          value = aws_db_instance.postgres[0].db_name
         }
       ]
       secrets = [
@@ -155,22 +167,34 @@ resource "aws_ecs_task_definition" "db_init" {
 }
 
 resource "aws_secretsmanager_secret_version" "relocation_db_url" {
-  count = contains(var.enabled_services, "relocation") ? 1 : 0
+  count = 1
 
   secret_id     = aws_secretsmanager_secret.service["relocation/RELOCATION_DB_URL"].id
-  secret_string = "jdbc:postgresql://${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${aws_db_instance.postgres.db_name}?currentSchema=relocation_service"
+  secret_string = var.runtime_enabled ? "jdbc:postgresql://${aws_db_instance.postgres[0].address}:${aws_db_instance.postgres[0].port}/${aws_db_instance.postgres[0].db_name}?currentSchema=relocation_service" : ""
+
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
 }
 
 resource "aws_secretsmanager_secret_version" "relocation_db_username" {
-  count = contains(var.enabled_services, "relocation") ? 1 : 0
+  count = 1
 
   secret_id     = aws_secretsmanager_secret.service["relocation/RELOCATION_DB_USERNAME"].id
-  secret_string = aws_db_instance.postgres.username
+  secret_string = var.runtime_enabled ? aws_db_instance.postgres[0].username : var.rds_master_username
+
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
 }
 
 resource "aws_secretsmanager_secret_version" "relocation_db_password" {
-  count = contains(var.enabled_services, "relocation") ? 1 : 0
+  count = 1
 
   secret_id     = aws_secretsmanager_secret.service["relocation/RELOCATION_DB_PASSWORD"].id
   secret_string = random_password.rds_master.result
+
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
 }

@@ -124,7 +124,7 @@ resource "aws_security_group" "bastion" {
 
 resource "aws_security_group_rule" "alb_to_tasks" {
   for_each = toset([
-    for service in local.services : tostring(service.container_port)
+    for service in local.runtime_services : tostring(service.container_port)
   ])
 
   type                     = "ingress"

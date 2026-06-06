@@ -107,21 +107,9 @@ jobs:
         if: github.event_name != 'workflow_dispatch' || (inputs.action != 'destroy' && inputs.action != 'db-init')
         run: terraform plan -no-color -out=tfplan
 
-      - name: Terraform runtime destroy plan
+      - name: Terraform runtime suspend plan
         if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy' && inputs.destroy_scope == 'runtime'
-        run: |
-          terraform plan -destroy -no-color -out=tfplan \
-            -target=aws_route_table_association.private \
-            -target=aws_route_table.private \
-            -target=aws_nat_gateway.this \
-            -target=aws_eip.nat \
-            -target=aws_lb_listener_rule.service \
-            -target=aws_lb_listener.https \
-            -target=aws_lb_listener.http \
-            -target=aws_lb_target_group.service \
-            -target=aws_lb.this \
-            -target=aws_security_group_rule.alb_to_tasks \
-            -target=aws_security_group.alb
+        run: terraform plan -no-color -out=tfplan -var='runtime_enabled=false'
 
       - name: Terraform full destroy plan
         if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy' && inputs.destroy_scope == 'all'
