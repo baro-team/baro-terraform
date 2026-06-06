@@ -107,66 +107,6 @@ jobs:
         if: github.event_name != 'workflow_dispatch' || (inputs.action != 'destroy' && inputs.action != 'db-init')
         run: terraform plan -no-color -out=tfplan
 
-      - name: Delete runtime ECS and RDS resources
-        if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy' && inputs.destroy_scope == 'runtime'
-        run: |
-          cluster_name="$(terraform output -raw ecs_cluster_name 2>/dev/null || true)"
-
-          if [ -n "$cluster_name" ]; then
-            service_arns="$(aws ecs list-services \
-              --region "$AWS_REGION" \
-              --cluster "$cluster_name" \
-              --query 'serviceArns[]' \
-              --output text 2>/dev/null || true)"
-
-            if [ -n "$service_arns" ] && [ "$service_arns" != "None" ]; then
-              for service_arn in $service_arns; do
-                aws ecs update-service \
-                  --region "$AWS_REGION" \
-                  --cluster "$cluster_name" \
-                  --service "$service_arn" \
-                  --desired-count 0 >/dev/null || true
-
-                aws ecs delete-service \
-                  --region "$AWS_REGION" \
-                  --cluster "$cluster_name" \
-                  --service "$service_arn" \
-                  --force >/dev/null || true
-              done
-
-              aws ecs wait services-inactive \
-                --region "$AWS_REGION" \
-                --cluster "$cluster_name" \
-                --services $service_arns || true
-            fi
-
-            aws ecs delete-cluster \
-              --region "$AWS_REGION" \
-              --cluster "$cluster_name" >/dev/null || true
-          fi
-
-          db_identifier="$(terraform state show -no-color aws_db_instance.postgres 2>/dev/null | awk -F ' = ' '/^[[:space:]]*identifier[[:space:]]*=/{gsub(/"/, "", $2); print $2; exit}')"
-
-          if [ -n "$db_identifier" ]; then
-            aws rds delete-db-instance \
-              --region "$AWS_REGION" \
-              --db-instance-identifier "$db_identifier" \
-              --skip-final-snapshot \
-              --delete-automated-backups >/dev/null || true
-
-            aws rds wait db-instance-deleted \
-              --region "$AWS_REGION" \
-              --db-instance-identifier "$db_identifier" || true
-          fi
-
-          terraform state list | while IFS= read -r address; do
-            case "$address" in
-              aws_ecs_service.service*|aws_ecs_service.geo_consumer|aws_ecs_cluster.this|aws_db_instance.postgres)
-                terraform state rm "$address"
-                ;;
-            esac
-          done
-
       - name: Terraform runtime destroy plan
         if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy' && inputs.destroy_scope == 'runtime'
         run: |
@@ -181,10 +121,7 @@ jobs:
             -target=aws_lb_target_group.service \
             -target=aws_lb.this \
             -target=aws_security_group_rule.alb_to_tasks \
-            -target=aws_security_group.alb \
-            -target=aws_security_group.ecs_tasks \
-            -target=aws_db_subnet_group.this \
-            -target=aws_security_group.rds
+            -target=aws_security_group.alb
 
       - name: Terraform full destroy plan
         if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy' && inputs.destroy_scope == 'all'
