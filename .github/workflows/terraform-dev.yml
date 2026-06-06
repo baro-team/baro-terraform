@@ -107,6 +107,66 @@ jobs:
         if: github.event_name != 'workflow_dispatch' || (inputs.action != 'destroy' && inputs.action != 'db-init')
         run: terraform plan -no-color -out=tfplan
 
+      - name: Delete runtime ECS and RDS resources
+        if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy' && inputs.destroy_scope == 'runtime'
+        run: |
+          cluster_name="$(terraform output -raw ecs_cluster_name 2>/dev/null || true)"
+
+          if [ -n "$cluster_name" ]; then
+            service_arns="$(aws ecs list-services \
+              --region "$AWS_REGION" \
+              --cluster "$cluster_name" \
+              --query 'serviceArns[]' \
+              --output text 2>/dev/null || true)"
+
+            if [ -n "$service_arns" ] && [ "$service_arns" != "None" ]; then
+              for service_arn in $service_arns; do
+                aws ecs update-service \
+                  --region "$AWS_REGION" \
+                  --cluster "$cluster_name" \
+                  --service "$service_arn" \
+                  --desired-count 0 >/dev/null || true
+
+                aws ecs delete-service \
+                  --region "$AWS_REGION" \
+                  --cluster "$cluster_name" \
+                  --service "$service_arn" \
+                  --force >/dev/null || true
+              done
+
+              aws ecs wait services-inactive \
+                --region "$AWS_REGION" \
+                --cluster "$cluster_name" \
+                --services $service_arns || true
+            fi
+
+            aws ecs delete-cluster \
+              --region "$AWS_REGION" \
+              --cluster "$cluster_name" >/dev/null || true
+          fi
+
+          db_identifier="$(terraform state show -no-color aws_db_instance.postgres 2>/dev/null | awk -F ' = ' '/^[[:space:]]*identifier[[:space:]]*=/{gsub(/"/, "", $2); print $2; exit}')"
+
+          if [ -n "$db_identifier" ]; then
+            aws rds delete-db-instance \
+              --region "$AWS_REGION" \
+              --db-instance-identifier "$db_identifier" \
+              --skip-final-snapshot \
+              --delete-automated-backups >/dev/null || true
+
+            aws rds wait db-instance-deleted \
+              --region "$AWS_REGION" \
+              --db-instance-identifier "$db_identifier" || true
+          fi
+
+          terraform state list | while IFS= read -r address; do
+            case "$address" in
+              aws_ecs_service.service*|aws_ecs_service.geo_consumer|aws_ecs_cluster.this|aws_db_instance.postgres)
+                terraform state rm "$address"
+                ;;
+            esac
+          done
+
       - name: Terraform runtime destroy plan
         if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy' && inputs.destroy_scope == 'runtime'
         run: |
@@ -115,12 +175,6 @@ jobs:
             -target=aws_route_table.private \
             -target=aws_nat_gateway.this \
             -target=aws_eip.nat \
-            -target=aws_ecs_service.service \
-            -target=aws_ecs_service.geo_consumer \
-            -target=aws_ecs_cluster.this \
-            -target=aws_cloudwatch_log_group.service \
-            -target=aws_cloudwatch_log_group.geo_consumer \
-            -target=aws_cloudwatch_log_group.db_init \
             -target=aws_lb_listener_rule.service \
             -target=aws_lb_listener.https \
             -target=aws_lb_listener.http \
@@ -129,22 +183,8 @@ jobs:
             -target=aws_security_group_rule.alb_to_tasks \
             -target=aws_security_group.alb \
             -target=aws_security_group.ecs_tasks \
-            -target=aws_db_instance.postgres \
             -target=aws_db_subnet_group.this \
-            -target=aws_security_group.rds \
-            -target=random_password.rds_master \
-            -target=aws_secretsmanager_secret.rds_master \
-            -target=aws_secretsmanager_secret_version.rds_master \
-            -target=aws_secretsmanager_secret_version.user_db_url \
-            -target=aws_secretsmanager_secret_version.user_db_username \
-            -target=aws_secretsmanager_secret_version.user_db_password \
-            -target=aws_secretsmanager_secret_version.dispatch_db_url \
-            -target=aws_secretsmanager_secret_version.dispatch_db_username \
-            -target=aws_secretsmanager_secret_version.dispatch_db_password \
-            -target=aws_iam_role_policy_attachment.ecs_task_execution \
-            -target=aws_iam_role_policy.ecs_task_execution_secrets \
-            -target=aws_iam_role.ecs_task_execution \
-            -target=aws_iam_role.ecs_task
+            -target=aws_security_group.rds
 
       - name: Terraform full destroy plan
         if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy' && inputs.destroy_scope == 'all'
@@ -159,7 +199,7 @@ jobs:
             .resource_changes[]?
             | select(.change.actions | index("delete"))
             | select(
-                .address | test("^(aws_vpc\\.this|aws_subnet\\.(public|private)|aws_internet_gateway\\.this|aws_route_table\\.public|aws_route_table_association\\.public|aws_ecr_repository\\.service|aws_ecr_lifecycle_policy\\.service|aws_secretsmanager_secret\\.service)")
+                .address | test("^(aws_vpc\\.this|aws_subnet\\.(public|private)|aws_internet_gateway\\.this|aws_route_table\\.public|aws_route_table_association\\.public|aws_ecr_repository\\.service|aws_ecr_lifecycle_policy\\.service|aws_secretsmanager_secret\\.|aws_secretsmanager_secret_version\\.)")
               )
             | .address
           ' tfplan.json)"
