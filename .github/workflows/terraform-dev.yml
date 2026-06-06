@@ -116,10 +116,10 @@ jobs:
             -target=aws_nat_gateway.this \
             -target=aws_eip.nat \
             -target=aws_ecs_service.service \
-            -target=aws_ecs_task_definition.service \
+            -target=aws_ecs_service.geo_consumer \
             -target=aws_ecs_cluster.this \
             -target=aws_cloudwatch_log_group.service \
-            -target=aws_ecs_task_definition.db_init \
+            -target=aws_cloudwatch_log_group.geo_consumer \
             -target=aws_cloudwatch_log_group.db_init \
             -target=aws_lb_listener_rule.service \
             -target=aws_lb_listener.https \
