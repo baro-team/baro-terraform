@@ -66,6 +66,8 @@ resource "aws_route_table_association" "public" {
 }
 
 resource "aws_eip" "nat" {
+  count = var.runtime_enabled ? 1 : 0
+
   domain = "vpc"
 
   tags = {
@@ -74,7 +76,9 @@ resource "aws_eip" "nat" {
 }
 
 resource "aws_nat_gateway" "this" {
-  allocation_id = aws_eip.nat.id
+  count = var.runtime_enabled ? 1 : 0
+
+  allocation_id = aws_eip.nat[0].id
   subnet_id     = values(aws_subnet.public)[0].id
 
   tags = {
@@ -87,9 +91,13 @@ resource "aws_nat_gateway" "this" {
 resource "aws_route_table" "private" {
   vpc_id = aws_vpc.this.id
 
-  route {
-    cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.this.id
+  dynamic "route" {
+    for_each = var.runtime_enabled ? [aws_nat_gateway.this[0].id] : []
+
+    content {
+      cidr_block     = "0.0.0.0/0"
+      nat_gateway_id = route.value
+    }
   }
 
   tags = {

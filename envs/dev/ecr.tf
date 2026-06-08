@@ -1,5 +1,5 @@
 resource "aws_ecr_repository" "service" {
-  for_each = local.services
+  for_each = local.all_services
 
   name                 = "${local.name_prefix}-${each.value.module}"
   image_tag_mutability = "MUTABLE"

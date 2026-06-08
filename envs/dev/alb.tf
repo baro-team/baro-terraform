@@ -1,4 +1,6 @@
 resource "aws_lb" "this" {
+  count = var.runtime_enabled ? 1 : 0
+
   name               = local.name_prefix
   load_balancer_type = "application"
   internal           = false
@@ -7,7 +9,7 @@ resource "aws_lb" "this" {
 }
 
 resource "aws_lb_target_group" "service" {
-  for_each = local.services
+  for_each = local.runtime_services
 
   name        = "${local.name_prefix}-${each.key}"
   port        = each.value.container_port
@@ -27,7 +29,9 @@ resource "aws_lb_target_group" "service" {
 }
 
 resource "aws_lb_listener" "http" {
-  load_balancer_arn = aws_lb.this.arn
+  count = var.runtime_enabled ? 1 : 0
+
+  load_balancer_arn = aws_lb.this[0].arn
   port              = 80
   protocol          = "HTTP"
 
@@ -43,7 +47,9 @@ resource "aws_lb_listener" "http" {
 }
 
 resource "aws_lb_listener" "https" {
-  load_balancer_arn = aws_lb.this.arn
+  count = var.runtime_enabled ? 1 : 0
+
+  load_balancer_arn = aws_lb.this[0].arn
   port              = 443
   protocol          = "HTTPS"
   ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
@@ -61,9 +67,9 @@ resource "aws_lb_listener" "https" {
 }
 
 resource "aws_lb_listener_rule" "service" {
-  for_each = local.services
+  for_each = local.runtime_services
 
-  listener_arn = aws_lb_listener.https.arn
+  listener_arn = aws_lb_listener.https[0].arn
   priority     = each.value.priority
 
   action {

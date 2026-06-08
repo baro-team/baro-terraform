@@ -46,8 +46,10 @@ resource "aws_ecs_task_definition" "geo_consumer" {
 }
 
 resource "aws_ecs_service" "geo_consumer" {
+  count = var.runtime_enabled ? 1 : 0
+
   name            = "${local.name_prefix}-vehicle-geo-consumer"
-  cluster         = aws_ecs_cluster.this.id
+  cluster         = aws_ecs_cluster.this[0].id
   task_definition = aws_ecs_task_definition.geo_consumer.arn
   desired_count   = 1
   launch_type     = "FARGATE"
