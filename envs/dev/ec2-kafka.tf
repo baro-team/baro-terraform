@@ -53,6 +53,10 @@ resource "aws_ebs_volume" "kafka_data" {
   type              = "gp3"
   encrypted         = true
 
+  lifecycle {
+    prevent_destroy = true
+  }
+
   tags = merge(local.common_tags, {
     Name = "${local.name_prefix}-kafka-data"
   })
@@ -72,6 +76,13 @@ resource "aws_instance" "kafka" {
   subnet_id              = values(aws_subnet.private)[0].id
   vpc_security_group_ids = [aws_security_group.kafka.id]
   iam_instance_profile   = aws_iam_instance_profile.kafka_ec2.name
+  private_ip             = "10.20.10.31"
+
+  root_block_device {
+    volume_size = 30
+    volume_type = "gp3"
+    encrypted   = true
+  }
 
   user_data = base64encode(<<-USERDATA
     #!/bin/bash
