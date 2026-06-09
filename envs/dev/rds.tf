@@ -38,6 +38,14 @@ resource "aws_security_group" "rds" {
     security_groups = [aws_security_group.bastion.id]
   }
 
+  ingress {
+    description = "On-premise VPN access"
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = [var.onprem_cidr]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
