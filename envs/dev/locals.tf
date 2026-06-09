@@ -112,9 +112,7 @@ locals {
       extra_environment = {
         BACKEND_API_BASE_URL = var.runtime_enabled ? "https://${local.app_domain_name}" : ""
       }
-      secret_names = [
-        "KAKAO_REST_API_KEY"
-      ]
+      secret_names = []
     }
   }
 
