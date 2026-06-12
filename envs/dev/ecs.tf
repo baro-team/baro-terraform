@@ -130,5 +130,8 @@ resource "aws_ecs_service" "service" {
     container_port   = each.value.container_port
   }
 
-  depends_on = [aws_lb_listener.https]
+  depends_on = [
+    aws_lb_listener.https,
+    aws_lb_listener.internal_https
+  ]
 }
