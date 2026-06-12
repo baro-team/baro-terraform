@@ -49,7 +49,6 @@ env:
   AWS_REGION: ap-northeast-2
   TF_IN_AUTOMATION: true
   TF_INPUT: false
-  TF_VAR_kakao_rest_api_key: ${{ secrets.KAKAO_REST_API_KEY }}
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
