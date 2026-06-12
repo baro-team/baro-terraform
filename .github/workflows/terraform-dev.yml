@@ -94,16 +94,26 @@ jobs:
         run: |
           SNAPSHOT_ID="baro-dev-pre-destroy-$(date +%Y%m%d%H%M%S)"
 
-          # RDS 인스턴스 존재 여부 확인
+          # RDS 인스턴스 존재 여부 확인 (exit code 기반)
+          if ! aws rds describe-db-instances \
+            --db-instance-identifier baro-dev-postgres \
+            --region ${{ env.AWS_REGION }} > /dev/null 2>&1; then
+            echo "RDS 인스턴스가 없습니다. 스냅샷 생략."
+            exit 0
+          fi
+
+          # RDS 상태 확인 (available 상태일 때만 스냅샷 가능)
           STATUS=$(aws rds describe-db-instances \
             --db-instance-identifier baro-dev-postgres \
             --region ${{ env.AWS_REGION }} \
             --query 'DBInstances[0].DBInstanceStatus' \
-            --output text 2>/dev/null || echo "not-found")
+            --output text)
 
-          if [ "$STATUS" = "not-found" ] || [ "$STATUS" = "None" ]; then
-            echo "RDS 인스턴스가 없습니다. 스냅샷 생략."
-            exit 0
+          echo "RDS 현재 상태: $STATUS"
+
+          if [ "$STATUS" != "available" ]; then
+            echo "RDS 상태가 available이 아닙니다 ($STATUS). 스냅샷을 생성할 수 없습니다."
+            exit 1
           fi
 
           echo "RDS 스냅샷 생성 중: $SNAPSHOT_ID"
