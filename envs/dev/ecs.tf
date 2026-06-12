@@ -1,4 +1,6 @@
 resource "aws_ecs_cluster" "this" {
+  count = var.runtime_enabled ? 1 : 0
+
   name = local.name_prefix
 
   setting {
@@ -49,7 +51,7 @@ resource "aws_ecs_task_definition" "service" {
           ) : {
           name  = name
           value = value
-        }
+        } if !contains(each.value.secret_names, name)
       ]
 
       secrets = concat(
@@ -98,10 +100,10 @@ resource "aws_ecs_task_definition" "service" {
 }
 
 resource "aws_ecs_service" "service" {
-  for_each = local.services
+  for_each = local.runtime_services
 
   name            = "${local.name_prefix}-${each.value.module}"
-  cluster         = aws_ecs_cluster.this.id
+  cluster         = aws_ecs_cluster.this[0].id
   task_definition = aws_ecs_task_definition.service[each.key].arn
   desired_count   = lookup(var.service_desired_counts, each.key, var.service_desired_count)
   launch_type     = "FARGATE"

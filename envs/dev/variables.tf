@@ -58,6 +58,12 @@ variable "image_tag" {
   default     = "latest"
 }
 
+variable "runtime_enabled" {
+  description = "Whether to run cost-incurring dev runtime resources such as NAT, ALB, and ECS services. Set false to suspend runtime without deleting preserved secrets/ECR."
+  type        = bool
+  default     = true
+}
+
 variable "service_desired_count" {
   description = "Desired task count per service."
   type        = number
@@ -79,11 +85,11 @@ variable "service_memory" {
 variable "enabled_services" {
   description = "Services to create in dev."
   type        = set(string)
-  default     = ["user", "dispatch", "control", "admin", "relocation"]
+  default     = ["user", "dispatch", "control", "admin", "relocation", "mobile"]
 
   validation {
-    condition     = alltrue([for service in var.enabled_services : contains(["control", "dispatch", "relocation", "user", "admin"], service)])
-    error_message = "enabled_services must contain only: control, dispatch, relocation, user, admin."
+    condition     = alltrue([for service in var.enabled_services : contains(["control", "dispatch", "relocation", "user", "admin", "mobile"], service)])
+    error_message = "enabled_services must contain only: control, dispatch, relocation, user, admin, mobile."
   }
 }
 
@@ -130,12 +136,6 @@ variable "rds_master_username" {
   description = "Master username for the shared dev RDS instance."
   type        = string
   default     = "baroadmin"
-}
-
-variable "bastion_instance_type" {
-  description = "EC2 instance type for the SSM-only RDS bastion."
-  type        = string
-  default     = "t4g.nano"
 }
 
 variable "onprem_cidr" {

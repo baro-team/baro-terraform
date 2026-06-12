@@ -1,6 +1,6 @@
 output "alb_dns_name" {
   description = "Public ALB DNS name."
-  value       = aws_lb.this.dns_name
+  value       = var.runtime_enabled ? aws_lb.this[0].dns_name : null
 }
 
 output "app_domain_name" {
@@ -15,7 +15,7 @@ output "app_url" {
 
 output "ecs_cluster_name" {
   description = "ECS cluster name."
-  value       = aws_ecs_cluster.this.name
+  value       = var.runtime_enabled ? aws_ecs_cluster.this[0].name : null
 }
 
 output "ecr_repository_urls" {
@@ -35,12 +35,12 @@ output "secret_names" {
 
 output "rds_endpoint" {
   description = "Private RDS PostgreSQL endpoint."
-  value       = aws_db_instance.postgres.endpoint
+  value       = var.runtime_enabled ? aws_db_instance.postgres[0].endpoint : null
 }
 
 output "rds_database_name" {
   description = "Shared PostgreSQL database name."
-  value       = aws_db_instance.postgres.db_name
+  value       = var.runtime_enabled ? aws_db_instance.postgres[0].db_name : null
 }
 
 output "rds_master_secret_name" {
@@ -50,17 +50,17 @@ output "rds_master_secret_name" {
 
 output "user_service_jdbc_url" {
   description = "User service JDBC URL with currentSchema=user_service."
-  value       = "jdbc:postgresql://${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${aws_db_instance.postgres.db_name}?currentSchema=user_service"
+  value       = var.runtime_enabled ? "jdbc:postgresql://${aws_db_instance.postgres[0].address}:${aws_db_instance.postgres[0].port}/${aws_db_instance.postgres[0].db_name}?currentSchema=user_service" : null
 }
 
 output "dispatch_service_jdbc_url" {
   description = "Dispatch service JDBC URL with currentSchema=dispatch_service."
-  value       = "jdbc:postgresql://${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${aws_db_instance.postgres.db_name}?currentSchema=dispatch_service"
+  value       = var.runtime_enabled ? "jdbc:postgresql://${aws_db_instance.postgres[0].address}:${aws_db_instance.postgres[0].port}/${aws_db_instance.postgres[0].db_name}?currentSchema=dispatch_service" : null
 }
 
 output "db_init_task_definition_arn" {
   description = "Run this one-off ECS task after apply to create PostgreSQL schemas."
-  value       = aws_ecs_task_definition.db_init.arn
+  value       = var.runtime_enabled ? aws_ecs_task_definition.db_init[0].arn : null
 }
 
 output "private_subnet_ids" {
@@ -81,19 +81,4 @@ output "redis_host" {
 output "redis_port" {
   description = "ElastiCache Valkey port for vehicle GEO cache."
   value       = aws_elasticache_replication_group.redis.port
-}
-
-output "bastion_instance_id" {
-  description = "SSM bastion EC2 instance ID for RDS port forwarding."
-  value       = aws_instance.bastion.id
-}
-
-output "bastion_private_ip" {
-  description = "Private IP of the SSM bastion EC2 instance."
-  value       = aws_instance.bastion.private_ip
-}
-
-output "bastion_security_group_id" {
-  description = "Security group ID for the SSM bastion EC2 instance."
-  value       = aws_security_group.bastion.id
 }

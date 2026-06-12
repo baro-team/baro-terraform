@@ -53,6 +53,10 @@ resource "aws_ebs_volume" "kafka_data" {
   type              = "gp3"
   encrypted         = true
 
+  lifecycle {
+    prevent_destroy = true
+  }
+
   tags = merge(local.common_tags, {
     Name = "${local.name_prefix}-kafka-data"
   })
@@ -68,10 +72,17 @@ resource "aws_volume_attachment" "kafka_data" {
 
 resource "aws_instance" "kafka" {
   ami                    = data.aws_ami.amazon_linux_2023.id
-  instance_type          = "t3.medium"
+  instance_type          = "t3.small"
   subnet_id              = values(aws_subnet.private)[0].id
   vpc_security_group_ids = [aws_security_group.kafka.id]
   iam_instance_profile   = aws_iam_instance_profile.kafka_ec2.name
+  private_ip             = "10.20.10.31"
+
+  root_block_device {
+    volume_size = 30
+    volume_type = "gp3"
+    encrypted   = true
+  }
 
   user_data = base64encode(<<-USERDATA
     #!/bin/bash
@@ -115,6 +126,7 @@ resource "aws_instance" "kafka" {
       -e KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1 \
       -e CLUSTER_ID=MkU3OEVBNTcwNTJENDM2Qk \
       -e KAFKA_LOG_DIRS=/var/kafka-data \
+      -e KAFKA_HEAP_OPTS="-Xms256M -Xmx512M" \
       ${data.aws_ecr_repository.kafka.repository_url}:${var.image_tag}
     USERDATA
   )

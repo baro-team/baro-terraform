@@ -88,6 +88,46 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Snapshot RDS before destroy
+        if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy'
+        run: |
+          SNAPSHOT_ID="baro-dev-pre-destroy-$(date +%Y%m%d%H%M%S)"
+
+          # RDS 인스턴스 존재 여부 확인 (exit code 기반)
+          if ! aws rds describe-db-instances \
+            --db-instance-identifier baro-dev-postgres \
+            --region ${{ env.AWS_REGION }} > /dev/null 2>&1; then
+            echo "RDS 인스턴스가 없습니다. 스냅샷 생략."
+            exit 0
+          fi
+
+          # RDS 상태 확인 (available 상태일 때만 스냅샷 가능)
+          STATUS=$(aws rds describe-db-instances \
+            --db-instance-identifier baro-dev-postgres \
+            --region ${{ env.AWS_REGION }} \
+            --query 'DBInstances[0].DBInstanceStatus' \
+            --output text)
+
+          echo "RDS 현재 상태: $STATUS"
+
+          if [ "$STATUS" != "available" ]; then
+            echo "RDS 상태가 available이 아닙니다 ($STATUS). 스냅샷을 생성할 수 없습니다."
+            exit 1
+          fi
+
+          echo "RDS 스냅샷 생성 중: $SNAPSHOT_ID"
+          aws rds create-db-snapshot \
+            --db-instance-identifier baro-dev-postgres \
+            --db-snapshot-identifier "$SNAPSHOT_ID" \
+            --region ${{ env.AWS_REGION }}
+
+          echo "스냅샷 완료 대기 중..."
+          aws rds wait db-snapshot-completed \
+            --db-snapshot-identifier "$SNAPSHOT_ID" \
+            --region ${{ env.AWS_REGION }}
+
+          echo "스냅샷 완료: $SNAPSHOT_ID"
+
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
         with:
@@ -107,44 +147,9 @@ jobs:
         if: github.event_name != 'workflow_dispatch' || (inputs.action != 'destroy' && inputs.action != 'db-init')
         run: terraform plan -no-color -out=tfplan
 
-      - name: Terraform runtime destroy plan
+      - name: Terraform runtime suspend plan
         if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy' && inputs.destroy_scope == 'runtime'
-        run: |
-          terraform plan -destroy -no-color -out=tfplan \
-            -target=aws_route_table_association.private \
-            -target=aws_route_table.private \
-            -target=aws_nat_gateway.this \
-            -target=aws_eip.nat \
-            -target=aws_ecs_service.service \
-            -target=aws_ecs_task_definition.service \
-            -target=aws_ecs_cluster.this \
-            -target=aws_cloudwatch_log_group.service \
-            -target=aws_ecs_task_definition.db_init \
-            -target=aws_cloudwatch_log_group.db_init \
-            -target=aws_lb_listener_rule.service \
-            -target=aws_lb_listener.https \
-            -target=aws_lb_listener.http \
-            -target=aws_lb_target_group.service \
-            -target=aws_lb.this \
-            -target=aws_security_group_rule.alb_to_tasks \
-            -target=aws_security_group.alb \
-            -target=aws_security_group.ecs_tasks \
-            -target=aws_db_instance.postgres \
-            -target=aws_db_subnet_group.this \
-            -target=aws_security_group.rds \
-            -target=random_password.rds_master \
-            -target=aws_secretsmanager_secret.rds_master \
-            -target=aws_secretsmanager_secret_version.rds_master \
-            -target=aws_secretsmanager_secret_version.user_db_url \
-            -target=aws_secretsmanager_secret_version.user_db_username \
-            -target=aws_secretsmanager_secret_version.user_db_password \
-            -target=aws_secretsmanager_secret_version.dispatch_db_url \
-            -target=aws_secretsmanager_secret_version.dispatch_db_username \
-            -target=aws_secretsmanager_secret_version.dispatch_db_password \
-            -target=aws_iam_role_policy_attachment.ecs_task_execution \
-            -target=aws_iam_role_policy.ecs_task_execution_secrets \
-            -target=aws_iam_role.ecs_task_execution \
-            -target=aws_iam_role.ecs_task
+        run: terraform plan -no-color -out=tfplan -var='runtime_enabled=false'
 
       - name: Terraform full destroy plan
         if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy' && inputs.destroy_scope == 'all'
@@ -159,7 +164,7 @@ jobs:
             .resource_changes[]?
             | select(.change.actions | index("delete"))
             | select(
-                .address | test("^(aws_vpc\\.this|aws_subnet\\.(public|private)|aws_internet_gateway\\.this|aws_route_table\\.public|aws_route_table_association\\.public|aws_ecr_repository\\.service|aws_ecr_lifecycle_policy\\.service|aws_secretsmanager_secret\\.service)")
+                .address | test("^(aws_vpc\\.this|aws_subnet\\.(public|private)|aws_internet_gateway\\.this|aws_route_table\\.public|aws_route_table_association\\.public|aws_ecr_repository\\.service|aws_ecr_lifecycle_policy\\.service|aws_secretsmanager_secret\\.|aws_secretsmanager_secret_version\\.)")
               )
             | .address
           ' tfplan.json)"
