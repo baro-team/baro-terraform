@@ -126,7 +126,7 @@ resource "aws_instance" "kafka" {
       -e KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1 \
       -e CLUSTER_ID=MkU3OEVBNTcwNTJENDM2Qk \
       -e KAFKA_LOG_DIRS=/var/kafka-data \
-      -e KAFKA_HEAP_OPTS="-Xms256M -Xmx1G" \
+      -e KAFKA_HEAP_OPTS="-Xms256M -Xmx512M" \
       ${data.aws_ecr_repository.kafka.repository_url}:${var.image_tag}
     USERDATA
   )
