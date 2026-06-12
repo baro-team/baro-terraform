@@ -111,9 +111,10 @@ locals {
       health_check_path = "/health"
       extra_environment = {
         BACKEND_API_BASE_URL = var.runtime_enabled ? "https://${local.app_domain_name}" : ""
-        KAKAO_REST_API_KEY   = var.kakao_rest_api_key
       }
-      secret_names = []
+      secret_names = [
+        "KAKAO_REST_API_KEY"
+      ]
     }
   }
 
