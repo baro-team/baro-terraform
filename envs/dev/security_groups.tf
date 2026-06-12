@@ -133,3 +133,40 @@ resource "aws_security_group_rule" "alb_to_tasks" {
   protocol                 = "tcp"
   description              = "ALB to ${each.value.module}"
 }
+
+resource "aws_security_group" "internal_alb" {
+  name        = "${local.name_prefix}-internal-alb"
+  description = "Allow HTTPS from Airflow VPN to Internal ALB"
+  vpc_id      = aws_vpc.this.id
+
+  ingress {
+    description = "HTTPS from Airflow VPN"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = [var.onprem_cidr, var.onprem_vm_cidr]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "${local.name_prefix}-internal-alb"
+  }
+}
+
+resource "aws_security_group_rule" "internal_alb_to_tasks" {
+  for_each = local.services
+
+  type                     = "ingress"
+  security_group_id        = aws_security_group.ecs_tasks.id
+  source_security_group_id = aws_security_group.internal_alb.id
+  from_port                = each.value.container_port
+  to_port                  = each.value.container_port
+  protocol                 = "tcp"
+  description              = "Internal ALB to ${each.value.module}"
+}

@@ -51,7 +51,8 @@ locals {
         KAFKA_VEHICLE_DATA_TOPIC                 = "vehicle-data-topic"
       }
       secret_names = [
-        "KAKAO_MOBILITY_API_KEY"
+        "KAKAO_MOBILITY_API_KEY",
+        "INTERNAL_API_KEY"
       ]
     }
 
@@ -68,7 +69,8 @@ locals {
       secret_names = [
         "RELOCATION_DB_URL",
         "RELOCATION_DB_USERNAME",
-        "RELOCATION_DB_PASSWORD"
+        "RELOCATION_DB_PASSWORD",
+        "INTERNAL_API_KEY"
       ]
     }
 

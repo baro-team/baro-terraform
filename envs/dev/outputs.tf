@@ -23,6 +23,11 @@ output "ecr_repository_urls" {
   value       = { for key, repo in aws_ecr_repository.service : key => repo.repository_url }
 }
 
+output "internal_alb_url" {
+  description = "Fixed DNS name for the Internal ALB. Use this in Airflow."
+  value       = "https://${aws_route53_record.internal_app.name}"
+}
+
 output "secret_names" {
   description = "Secrets to populate before running tasks."
   value       = [for secret in aws_secretsmanager_secret.service : secret.name]
