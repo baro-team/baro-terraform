@@ -124,5 +124,11 @@ resource "aws_ecs_service" "service" {
     container_port   = each.value.container_port
   }
 
+  load_balancer {
+    target_group_arn = aws_lb_target_group.internal_service[each.key].arn
+    container_name   = each.value.module
+    container_port   = each.value.container_port
+  }
+
   depends_on = [aws_lb_listener.https]
 }
