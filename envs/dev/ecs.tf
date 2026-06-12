@@ -51,7 +51,7 @@ resource "aws_ecs_task_definition" "service" {
           ) : {
           name  = name
           value = value
-        }
+        } if !contains(each.value.secret_names, name)
       ]
 
       secrets = concat(

@@ -155,6 +155,9 @@ Kafka는 ECS가 아니라 private EC2에서 실행되며, Cloud Map namespace를
 
 - `baro-dev/mobile/KAKAO_REST_API_KEY`
 
+Terraform은 이 값을 ECS task definition의 `secrets`로 참조만 합니다. 값은 AWS Secrets Manager에 직접 입력해야 하며, GitHub Actions secret 또는 Terraform variable에서 일반 환경변수로 주입하지 않습니다.
+처음 반영할 때는 ECS service가 새 task definition으로 배포되기 전에 `baro-dev/mobile/KAKAO_REST_API_KEY`에 실제 SecretString 값을 먼저 채워야 합니다.
+
 `baro-mobile` 컨테이너는 정적 SPA를 nginx로 서빙하며, `/api/auth`, `/api/dispatch`, `/api/places/search` 요청을 런타임 nginx 프록시로 처리합니다.
 
 ## RDS layout

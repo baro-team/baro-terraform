@@ -58,13 +58,6 @@ variable "image_tag" {
   default     = "latest"
 }
 
-variable "kakao_rest_api_key" {
-  description = "Kakao REST API key injected into the mobile ECS container environment from GitHub Actions secrets."
-  type        = string
-  default     = ""
-  sensitive   = true
-}
-
 variable "runtime_enabled" {
   description = "Whether to run cost-incurring dev runtime resources such as NAT, ALB, and ECS services. Set false to suspend runtime without deleting preserved secrets/ECR."
   type        = bool
