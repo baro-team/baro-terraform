@@ -72,7 +72,7 @@ resource "aws_volume_attachment" "kafka_data" {
 
 resource "aws_instance" "kafka" {
   ami                    = data.aws_ami.amazon_linux_2023.id
-  instance_type          = "t3.medium"
+  instance_type          = "t3.small"
   subnet_id              = values(aws_subnet.private)[0].id
   vpc_security_group_ids = [aws_security_group.kafka.id]
   iam_instance_profile   = aws_iam_instance_profile.kafka_ec2.name
@@ -126,6 +126,7 @@ resource "aws_instance" "kafka" {
       -e KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1 \
       -e CLUSTER_ID=MkU3OEVBNTcwNTJENDM2Qk \
       -e KAFKA_LOG_DIRS=/var/kafka-data \
+      -e KAFKA_HEAP_OPTS="-Xms256M -Xmx512M" \
       ${data.aws_ecr_repository.kafka.repository_url}:${var.image_tag}
     USERDATA
   )
