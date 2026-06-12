@@ -25,7 +25,7 @@ output "ecr_repository_urls" {
 
 output "internal_alb_url" {
   description = "Fixed DNS name for the Internal ALB. Use this in Airflow."
-  value       = "https://${aws_route53_record.internal_app.name}"
+  value       = var.runtime_enabled ? "https://${aws_route53_record.internal_app[0].name}" : ""
 }
 
 output "secret_names" {

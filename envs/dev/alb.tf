@@ -66,7 +66,8 @@ resource "aws_lb_listener" "https" {
   }
 }
 resource "aws_lb_listener_rule" "block_internal" {
-  listener_arn = aws_lb_listener.https.arn
+  count        = var.runtime_enabled ? 1 : 0
+  listener_arn = aws_lb_listener.https[0].arn
   priority     = 10
 
   action {

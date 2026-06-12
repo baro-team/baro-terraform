@@ -53,13 +53,14 @@ resource "aws_route53_record" "app" {
 }
 
 resource "aws_route53_record" "internal_app" {
+  count   = var.runtime_enabled ? 1 : 0
   zone_id = data.aws_route53_zone.this.zone_id
   name    = "internal-${local.app_domain_name}"
   type    = "A"
 
   alias {
-    name                   = aws_lb.internal.dns_name
-    zone_id                = aws_lb.internal.zone_id
+    name                   = aws_lb.internal[0].dns_name
+    zone_id                = aws_lb.internal[0].zone_id
     evaluate_target_health = true
   }
 }

@@ -120,6 +120,7 @@ resource "aws_security_group_rule" "alb_to_tasks" {
 }
 
 resource "aws_security_group" "internal_alb" {
+  count       = var.runtime_enabled ? 1 : 0
   name        = "${local.name_prefix}-internal-alb"
   description = "Allow HTTPS from Airflow VPN to Internal ALB"
   vpc_id      = aws_vpc.this.id
@@ -145,13 +146,15 @@ resource "aws_security_group" "internal_alb" {
 }
 
 resource "aws_security_group_rule" "internal_alb_to_tasks" {
-  for_each = local.services
+  for_each = toset([
+    for service in local.runtime_services : tostring(service.container_port)
+  ])
 
   type                     = "ingress"
   security_group_id        = aws_security_group.ecs_tasks.id
-  source_security_group_id = aws_security_group.internal_alb.id
-  from_port                = each.value.container_port
-  to_port                  = each.value.container_port
+  source_security_group_id = aws_security_group.internal_alb[0].id
+  from_port                = tonumber(each.value)
+  to_port                  = tonumber(each.value)
   protocol                 = "tcp"
-  description              = "Internal ALB to ${each.value.module}"
+  description              = "Internal ALB to ECS tasks on port ${each.value}"
 }
