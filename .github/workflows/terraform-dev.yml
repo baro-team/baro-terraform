@@ -133,6 +133,15 @@ jobs:
           (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
           (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')
         run: |
+          # RDS가 이미 존재하면 스냅샷 복원 불필요
+          if aws rds describe-db-instances \
+            --db-instance-identifier baro-dev-postgres \
+            --region ${{ env.AWS_REGION }} > /dev/null 2>&1; then
+            echo "RDS 이미 실행 중 → 스냅샷 복원 생략"
+            exit 0
+          fi
+
+          # RDS가 없을 때만 최신 수동 스냅샷 탐색
           SNAPSHOT_ID=$(aws rds describe-db-snapshots \
             --db-instance-identifier baro-dev-postgres \
             --snapshot-type manual \
