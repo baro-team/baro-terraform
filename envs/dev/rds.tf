@@ -68,7 +68,7 @@ resource "aws_db_instance" "postgres" {
 
   db_name  = var.restore_snapshot_id != "" ? null : var.rds_database_name
   username = var.restore_snapshot_id != "" ? null : var.rds_master_username
-  password = random_password.rds_master.result
+  password = var.restore_snapshot_id != "" ? null : random_password.rds_master.result
 
   db_subnet_group_name   = aws_db_subnet_group.this[0].name
   vpc_security_group_ids = [aws_security_group.rds[0].id]
@@ -88,7 +88,7 @@ resource "aws_db_instance" "postgres" {
   }
 
   lifecycle {
-    ignore_changes = [snapshot_identifier]
+    ignore_changes = [snapshot_identifier, db_name, username]
   }
 }
 
