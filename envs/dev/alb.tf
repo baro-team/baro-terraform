@@ -9,7 +9,7 @@ resource "aws_lb" "this" {
 }
 
 resource "aws_lb_target_group" "service" {
-  for_each = local.runtime_services
+  for_each = local.public_alb_services
 
   name        = "${local.name_prefix}-${each.key}"
   port        = each.value.container_port
@@ -87,14 +87,14 @@ resource "aws_lb_listener_rule" "block_internal" {
 }
 
 resource "aws_lb_listener_rule" "service" {
-  for_each = local.runtime_services
+  for_each = local.public_alb_listener_rules
 
   listener_arn = aws_lb_listener.https[0].arn
   priority     = each.value.priority
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.service[each.key].arn
+    target_group_arn = aws_lb_target_group.service[each.value.service_key].arn
   }
 
   condition {

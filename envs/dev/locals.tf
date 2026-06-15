@@ -10,6 +10,21 @@ locals {
   }
 
   all_services = {
+    gateway = {
+      module            = "gateway-service"
+      container_port    = 8080
+      priority          = 90
+      path_patterns     = ["/user", "/user/*", "/dispatch", "/dispatch/*", "/control", "/control/*", "/relocation/assign"]
+      health_check_path = "/actuator/health"
+      extra_environment = {
+        USER_SERVICE_URL       = "http://user-service.${aws_service_discovery_private_dns_namespace.this.name}:8084"
+        DISPATCH_SERVICE_URL   = "http://dispatch-service.${aws_service_discovery_private_dns_namespace.this.name}:8082"
+        CONTROL_SERVICE_URL    = "http://control-service.${aws_service_discovery_private_dns_namespace.this.name}:8081"
+        RELOCATION_SERVICE_URL = "http://relocation-service.${aws_service_discovery_private_dns_namespace.this.name}:8083"
+      }
+      secret_names = []
+    }
+
     control = {
       module            = "control-service"
       container_port    = 8081
@@ -25,7 +40,7 @@ locals {
         IOT_KEY_PATH               = "certs/private.pem.key"
         KAFKA_BOOTSTRAP_SERVERS    = "kafka.${aws_service_discovery_private_dns_namespace.this.name}:9092"
         KAFKA_TOPIC                = "vehicle-data-topic"
-        DISPATCH_SERVICE_URL       = var.runtime_enabled ? "https://${local.app_domain_name}" : ""
+        DISPATCH_SERVICE_URL       = "http://dispatch-service.${aws_service_discovery_private_dns_namespace.this.name}:8082"
       }
       secret_names = ["IOT_CA_CERT", "IOT_CERT", "IOT_KEY"]
     }
@@ -50,7 +65,7 @@ locals {
         KAFKA_BOOTSTRAP_SERVERS                  = "kafka.${aws_service_discovery_private_dns_namespace.this.name}:9092"
         KAFKA_DISPATCH_CONSUMER_GROUP_ID         = "dispatch-service"
         KAFKA_VEHICLE_DATA_TOPIC                 = "vehicle-data-topic"
-        CONTROL_SERVICE_URL                      = "https://${local.app_domain_name}"
+        CONTROL_SERVICE_URL                      = "http://control-service.${aws_service_discovery_private_dns_namespace.this.name}:8081"
       }
       secret_names = [
         "KAKAO_MOBILITY_API_KEY",
@@ -127,6 +142,24 @@ locals {
   }
 
   runtime_services = var.runtime_enabled ? local.services : {}
+
+  public_alb_services = {
+    for key, service in local.runtime_services : key => service
+    if contains(["gateway", "admin", "mobile"], key)
+  }
+
+  public_alb_listener_rules = {
+    for rule in flatten([
+      for service_key, service in local.public_alb_services : [
+        for chunk_index, path_patterns in chunklist(service.path_patterns, 5) : {
+          key           = "${service_key}-${chunk_index}"
+          service_key   = service_key
+          priority      = service.priority + chunk_index
+          path_patterns = path_patterns
+        }
+      ]
+    ]) : rule.key => rule
+  }
 
   secret_keys = toset(flatten([
     for service_name, service in local.all_services : [
