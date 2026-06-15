@@ -58,6 +58,12 @@ variable "image_tag" {
   default     = "latest"
 }
 
+variable "restore_snapshot_id" {
+  description = "Manual snapshot ID to restore RDS from on creation. Empty string creates a fresh instance."
+  type        = string
+  default     = ""
+}
+
 variable "runtime_enabled" {
   description = "Whether to run cost-incurring dev runtime resources such as NAT, ALB, and ECS services. Set false to suspend runtime without deleting preserved secrets/ECR."
   type        = bool

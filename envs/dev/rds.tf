@@ -64,6 +64,8 @@ resource "aws_db_instance" "postgres" {
   storage_type          = "gp3"
   storage_encrypted     = true
 
+  snapshot_identifier = var.restore_snapshot_id != "" ? var.restore_snapshot_id : null
+
   db_name  = var.rds_database_name
   username = var.rds_master_username
   password = random_password.rds_master.result
@@ -83,6 +85,10 @@ resource "aws_db_instance" "postgres" {
 
   tags = {
     Name = "${local.name_prefix}-postgres"
+  }
+
+  lifecycle {
+    ignore_changes = [snapshot_identifier]
   }
 }
 
