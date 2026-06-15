@@ -1,6 +1,6 @@
 locals {
-  name_prefix     = "${var.project}-${var.environment}"
-  app_domain_name = var.app_domain_name != "" ? var.app_domain_name : "${var.environment}.${var.domain_name}"
+  name_prefix       = "${var.project}-${var.environment}"
+  app_domain_name   = var.app_domain_name != "" ? var.app_domain_name : "${var.environment}.${var.domain_name}"
   effective_db_name = (var.runtime_enabled && length(aws_db_instance.postgres) > 0) ? coalesce(try(aws_db_instance.postgres[0].db_name, null), var.rds_database_name) : var.rds_database_name
 
   common_tags = {
