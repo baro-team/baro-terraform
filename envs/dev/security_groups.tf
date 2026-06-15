@@ -119,6 +119,20 @@ resource "aws_security_group_rule" "alb_to_tasks" {
   description              = "ALB to ECS tasks on port ${each.value}"
 }
 
+resource "aws_security_group_rule" "ecs_tasks_to_tasks" {
+  for_each = toset([
+    for service in local.runtime_services : tostring(service.container_port)
+  ])
+
+  type                     = "ingress"
+  security_group_id        = aws_security_group.ecs_tasks.id
+  source_security_group_id = aws_security_group.ecs_tasks.id
+  from_port                = tonumber(each.value)
+  to_port                  = tonumber(each.value)
+  protocol                 = "tcp"
+  description              = "ECS tasks to ECS tasks on port ${each.value}"
+}
+
 resource "aws_security_group" "internal_alb" {
   count       = var.runtime_enabled ? 1 : 0
   name        = "${local.name_prefix}-internal-alb"
