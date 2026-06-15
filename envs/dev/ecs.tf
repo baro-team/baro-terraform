@@ -87,7 +87,7 @@ resource "aws_ecs_task_definition" "service" {
             valueFrom = aws_secretsmanager_secret.service["user/JWT_SECRET"].arn
           }
         ] : [],
-        contains(["control", "dispatch", "relocation"], each.key) ? [
+        contains(["dispatch", "relocation"], each.key) ? [
           {
             name      = "INTERNAL_API_KEY"
             valueFrom = data.aws_secretsmanager_secret.internal_api_key.arn
