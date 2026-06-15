@@ -65,6 +65,26 @@ resource "aws_lb_listener" "https" {
     }
   }
 }
+resource "aws_lb_listener_rule" "block_internal" {
+  count        = var.runtime_enabled ? 1 : 0
+  listener_arn = aws_lb_listener.https[0].arn
+  priority     = 10
+
+  action {
+    type = "fixed-response"
+    fixed_response {
+      content_type = "text/plain"
+      message_body = "Forbidden"
+      status_code  = "403"
+    }
+  }
+
+  condition {
+    path_pattern {
+      values = ["/internal/*", "*/internal/*"]
+    }
+  }
+}
 
 resource "aws_lb_listener_rule" "service" {
   for_each = local.runtime_services
