@@ -59,7 +59,7 @@ resource "aws_ecs_task_definition" "service" {
           for secret_name in each.value.secret_names : {
             name      = secret_name
             valueFrom = aws_secretsmanager_secret.service["${each.key}/${secret_name}"].arn
-          }
+          } if secret_name != "INTERNAL_API_KEY"
         ],
         each.key == "dispatch" ? [
           {
@@ -87,7 +87,7 @@ resource "aws_ecs_task_definition" "service" {
             valueFrom = aws_secretsmanager_secret.service["user/JWT_SECRET"].arn
           }
         ] : [],
-        contains(["dispatch", "relocation"], each.key) ? [
+        contains(["control", "dispatch", "relocation"], each.key) ? [
           {
             name      = "INTERNAL_API_KEY"
             valueFrom = data.aws_secretsmanager_secret.internal_api_key.arn
@@ -126,15 +126,28 @@ resource "aws_ecs_service" "service" {
     assign_public_ip = false
   }
 
-  load_balancer {
-    target_group_arn = aws_lb_target_group.service[each.key].arn
-    container_name   = each.value.module
-    container_port   = each.value.container_port
+  dynamic "load_balancer" {
+    for_each = contains(keys(local.public_alb_services), each.key) ? [each.value] : []
+
+    content {
+      target_group_arn = aws_lb_target_group.service[each.key].arn
+      container_name   = load_balancer.value.module
+      container_port   = load_balancer.value.container_port
+    }
   }
 
   service_registries {
     registry_arn = aws_service_discovery_service.service[each.key].arn
   }
 
-  depends_on = [aws_lb_listener.https]
+  load_balancer {
+    target_group_arn = aws_lb_target_group.internal_service[each.key].arn
+    container_name   = each.value.module
+    container_port   = each.value.container_port
+  }
+
+  depends_on = [
+    aws_lb_listener.https,
+    aws_lb_listener.internal_https
+  ]
 }

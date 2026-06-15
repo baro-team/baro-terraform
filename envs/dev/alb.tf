@@ -9,7 +9,7 @@ resource "aws_lb" "this" {
 }
 
 resource "aws_lb_target_group" "service" {
-  for_each = local.runtime_services
+  for_each = local.public_alb_services
 
   name        = "${local.name_prefix}-${each.key}"
   port        = each.value.container_port
@@ -62,6 +62,26 @@ resource "aws_lb_listener" "https" {
       content_type = "text/plain"
       message_body = "baro dev alb"
       status_code  = "404"
+    }
+  }
+}
+resource "aws_lb_listener_rule" "block_internal" {
+  count        = var.runtime_enabled ? 1 : 0
+  listener_arn = aws_lb_listener.https[0].arn
+  priority     = 10
+
+  action {
+    type = "fixed-response"
+    fixed_response {
+      content_type = "text/plain"
+      message_body = "Forbidden"
+      status_code  = "403"
+    }
+  }
+
+  condition {
+    path_pattern {
+      values = ["/internal/*", "*/internal/*"]
     }
   }
 }

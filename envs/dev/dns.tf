@@ -4,8 +4,9 @@ data "aws_route53_zone" "this" {
 }
 
 resource "aws_acm_certificate" "alb" {
-  domain_name       = local.app_domain_name
-  validation_method = "DNS"
+  domain_name               = local.app_domain_name
+  subject_alternative_names = ["internal-${local.app_domain_name}"]
+  validation_method         = "DNS"
 
   lifecycle {
     create_before_destroy = true
@@ -47,6 +48,19 @@ resource "aws_route53_record" "app" {
   alias {
     name                   = aws_lb.this[0].dns_name
     zone_id                = aws_lb.this[0].zone_id
+    evaluate_target_health = true
+  }
+}
+
+resource "aws_route53_record" "internal_app" {
+  count   = var.runtime_enabled ? 1 : 0
+  zone_id = data.aws_route53_zone.this.zone_id
+  name    = "internal-${local.app_domain_name}"
+  type    = "A"
+
+  alias {
+    name                   = aws_lb.internal[0].dns_name
+    zone_id                = aws_lb.internal[0].zone_id
     evaluate_target_health = true
   }
 }

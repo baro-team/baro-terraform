@@ -1,6 +1,7 @@
 locals {
-  name_prefix     = "${var.project}-${var.environment}"
-  app_domain_name = var.app_domain_name != "" ? var.app_domain_name : "${var.environment}.${var.domain_name}"
+  name_prefix       = "${var.project}-${var.environment}"
+  app_domain_name   = var.app_domain_name != "" ? var.app_domain_name : "${var.environment}.${var.domain_name}"
+  effective_db_name = (var.runtime_enabled && length(aws_db_instance.postgres) > 0) ? coalesce(try(aws_db_instance.postgres[0].db_name, null), var.rds_database_name) : var.rds_database_name
 
   common_tags = {
     Project     = var.project
@@ -60,14 +61,15 @@ locals {
         REDIS_SSL_ENABLED                        = "false"
         DISPATCH_REDIS_IDLE_CAR_GEO_KEY          = "dispatch:cars:idle:geo"
         DISPATCH_REDIS_IDLE_CAR_SEARCH_RADIUS_KM = "5.0"
-        DISPATCH_DB_URL                          = var.runtime_enabled ? "jdbc:postgresql://${aws_db_instance.postgres[0].address}:${aws_db_instance.postgres[0].port}/${aws_db_instance.postgres[0].db_name}?currentSchema=dispatch_service" : ""
+        DISPATCH_DB_URL                          = var.runtime_enabled ? "jdbc:postgresql://${aws_db_instance.postgres[0].address}:${aws_db_instance.postgres[0].port}/${local.effective_db_name}?currentSchema=dispatch_service" : ""
         KAFKA_BOOTSTRAP_SERVERS                  = "kafka.${aws_service_discovery_private_dns_namespace.this.name}:9092"
         KAFKA_DISPATCH_CONSUMER_GROUP_ID         = "dispatch-service"
         KAFKA_VEHICLE_DATA_TOPIC                 = "vehicle-data-topic"
         CONTROL_SERVICE_URL                      = "http://control-service.${aws_service_discovery_private_dns_namespace.this.name}:8081"
       }
       secret_names = [
-        "KAKAO_MOBILITY_API_KEY"
+        "KAKAO_MOBILITY_API_KEY",
+        "INTERNAL_API_KEY"
       ]
     }
 
@@ -84,7 +86,8 @@ locals {
       secret_names = [
         "RELOCATION_DB_URL",
         "RELOCATION_DB_USERNAME",
-        "RELOCATION_DB_PASSWORD"
+        "RELOCATION_DB_PASSWORD",
+        "INTERNAL_API_KEY"
       ]
     }
 
@@ -101,7 +104,7 @@ locals {
         SPRING_JPA_HIBERNATE_DDL_AUTO        = "update"
         SPRINGDOC_API_DOCS_PATH              = "/user/api-docs"
         SPRINGDOC_SWAGGER_UI_PATH            = "/user/swagger-ui.html"
-        USER_DB_URL                          = var.runtime_enabled ? "jdbc:postgresql://${aws_db_instance.postgres[0].address}:${aws_db_instance.postgres[0].port}/${aws_db_instance.postgres[0].db_name}?currentSchema=user_service" : ""
+        USER_DB_URL                          = var.runtime_enabled ? "jdbc:postgresql://${aws_db_instance.postgres[0].address}:${aws_db_instance.postgres[0].port}/${local.effective_db_name}?currentSchema=user_service" : ""
       }
       secret_names = [
         "JWT_SECRET"
