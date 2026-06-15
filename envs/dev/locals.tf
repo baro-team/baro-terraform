@@ -148,6 +148,19 @@ locals {
     if contains(["gateway", "admin", "mobile"], key)
   }
 
+  public_alb_listener_rules = {
+    for rule in flatten([
+      for service_key, service in local.public_alb_services : [
+        for chunk_index, path_patterns in chunklist(service.path_patterns, 5) : {
+          key           = "${service_key}-${chunk_index}"
+          service_key   = service_key
+          priority      = service.priority + chunk_index
+          path_patterns = path_patterns
+        }
+      ]
+    ]) : rule.key => rule
+  }
+
   secret_keys = toset(flatten([
     for service_name, service in local.all_services : [
       for secret_name in service.secret_names : "${service_name}/${secret_name}"
