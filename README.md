@@ -32,7 +32,9 @@
 
 - VPC with public/private subnets
 - NAT Gateway for private ECS tasks
-- Public ALB with HTTPS and path-based routing
+- Public ALB with HTTPS and Gateway-centered path-based routing
+- Internal ALB for `/internal/{service}/*` service-to-service routes
+- Cloud Map private DNS for internal service discovery
 - Route 53 alias and ACM certificate for `dev.barocloud.com`
 - ECR repositories
 - ECS cluster and Fargate services
@@ -48,20 +50,23 @@
 
 지원 서비스:
 
-| Key | Module | Port | ALB paths | Default enabled |
+| Key | Module | Port | Public route | Default enabled |
 | --- | --- | ---: | --- | --- |
-| `control` | `control-service` | 8081 | `/control`, `/control/*` | yes |
-| `dispatch` | `dispatch-service` | 8082 | `/dispatch`, `/dispatch/*` | yes |
-| `relocation` | `relocation-service` | 8083 | `/relocation`, `/relocation/*` | yes |
-| `user` | `user-service` | 8084 | `/user`, `/user/*` | yes |
+| `gateway` | `gateway-service` | 8080 | `/user`, `/user/*`, `/dispatch`, `/dispatch/*`, `/control`, `/control/*`, `/relocation/assign` | yes |
+| `control` | `control-service` | 8081 | internal only | yes |
+| `dispatch` | `dispatch-service` | 8082 | internal only | yes |
+| `relocation` | `relocation-service` | 8083 | via Gateway: `/relocation/assign` | yes |
+| `user` | `user-service` | 8084 | internal only | yes |
 | `admin` | `baro-admin` | 80 | `/admin`, `/admin/*` | yes |
 | `mobile` | `baro-mobile` | 80 | `/*` | yes |
 
 기본 `enabled_services`는 아래와 같습니다.
 
 ```hcl
-enabled_services = ["user", "dispatch", "control", "admin", "relocation", "mobile"]
+enabled_services = ["gateway", "user", "dispatch", "control", "admin", "relocation", "mobile"]
 ```
+
+Public ALB target group과 ECS public load balancer 연결은 `local.public_alb_services`에 포함된 `gateway`, `admin`, `mobile`에만 생성됩니다. `user`, `dispatch`, `control`, `relocation`은 public ALB에 직접 등록하지 않고 Gateway 또는 내부 통신 경로를 통해 접근합니다.
 
 `mobile`은 HTTPS listener의 catch-all rule로 등록되어 `/control`, `/dispatch`, `/user`, `/admin`, `/relocation` 등 더 높은 우선순위의 서비스 path를 제외한 웹 트래픽을 처리합니다.
 
@@ -79,17 +84,39 @@ Service base URLs:
 - User: https://dev.barocloud.com/user/users
 - Mobile web: https://dev.barocloud.com/
 
+업무 API는 public ALB에서 `gateway-service`로 들어간 뒤 Gateway가 Cloud Map private DNS를 통해 각 backend 서비스로 전달합니다.
+
 ## 주요 내부 엔드포인트
 
 | Component | Endpoint |
 | --- | --- |
 | Kafka | `kafka.baro.internal:9092` |
+| Gateway | `gateway-service.baro.internal:8080` |
+| User service | `user-service.baro.internal:8084` |
+| Dispatch service | `dispatch-service.baro.internal:8082` |
+| Control service | `control-service.baro.internal:8081` |
+| Relocation service | `relocation-service.baro.internal:8083` |
 | RDS | private RDS endpoint, port `5432` |
 | Valkey | `redis_host` output, port `6379` |
 
 Kafka는 ECS가 아니라 private EC2에서 실행되며, Cloud Map namespace를 통해 `kafka.baro.internal`로 접근합니다.
 
+Public ALB는 `/internal/*`, `*/internal/*` 요청을 403으로 차단합니다. Internal ALB는 `/internal/{service}/*` 형태의 내부 라우팅을 제공합니다.
+
 ## Service environment and secrets
+
+### gateway-service
+
+주요 환경변수:
+
+- `USER_SERVICE_URL=http://user-service.baro.internal:8084`
+- `DISPATCH_SERVICE_URL=http://dispatch-service.baro.internal:8082`
+- `CONTROL_SERVICE_URL=http://control-service.baro.internal:8081`
+- `RELOCATION_SERVICE_URL=http://relocation-service.baro.internal:8083`
+
+공유 secret 주입:
+
+- `JWT_SECRET`: `baro-dev/user/JWT_SECRET` 재사용
 
 ### control-service
 
@@ -98,7 +125,7 @@ Kafka는 ECS가 아니라 private EC2에서 실행되며, Cloud Map namespace를
 - MQTT/AWS IoT 설정
 - `KAFKA_BOOTSTRAP_SERVERS=kafka.baro.internal:9092`
 - `KAFKA_TOPIC=vehicle-data-topic`
-- `DISPATCH_SERVICE_URL`
+- `DISPATCH_SERVICE_URL=http://dispatch-service.baro.internal:8082`
 
 직접 채워야 하는 Secrets Manager 값:
 
@@ -119,15 +146,30 @@ Kafka는 ECS가 아니라 private EC2에서 실행되며, Cloud Map namespace를
 - `REDIS_SSL_ENABLED=false`
 - `DISPATCH_REDIS_IDLE_CAR_GEO_KEY=dispatch:cars:idle:geo`
 - `DISPATCH_REDIS_IDLE_CAR_SEARCH_RADIUS_KM=5.0`
+- `CONTROL_SERVICE_URL=http://control-service.baro.internal:8081`
 
 직접 채워야 하는 Secrets Manager 값:
 
 - `baro-dev/dispatch/KAKAO_MOBILITY_API_KEY`
+- `baro-dev/dispatch/INTERNAL_API_KEY`
 
 공유 secret 주입:
 
 - `DISPATCH_DB_USERNAME`, `DISPATCH_DB_PASSWORD`: `baro-dev/rds/master`에서 주입
-- `JWT_SECRET`: `baro-dev/user/JWT_SECRET` 재사용
+- `INTERNAL_API_KEY`: `internal_api_key_secret_name`으로 지정한 기존 secret에서 주입
+
+### relocation-service
+
+직접 채워야 하는 Secrets Manager 값:
+
+- `baro-dev/relocation/RELOCATION_DB_URL`
+- `baro-dev/relocation/RELOCATION_DB_USERNAME`
+- `baro-dev/relocation/RELOCATION_DB_PASSWORD`
+- `baro-dev/relocation/INTERNAL_API_KEY` placeholder는 기존 리소스 유지를 위해 남기지만, 현재 ECS 주입에는 사용하지 않습니다.
+
+공유 secret 주입:
+
+- `INTERNAL_API_KEY`: `internal_api_key_secret_name`으로 지정한 기존 secret에서 주입
 
 ### user-service
 
@@ -251,9 +293,14 @@ Terraform이 생성/관리하는 주요 secret:
 
 - `baro-dev/user/JWT_SECRET`
 - `baro-dev/dispatch/KAKAO_MOBILITY_API_KEY`
+- `baro-dev/dispatch/INTERNAL_API_KEY`
 - `baro-dev/control/IOT_CA_CERT`
 - `baro-dev/control/IOT_CERT`
 - `baro-dev/control/IOT_KEY`
+- `baro-dev/relocation/RELOCATION_DB_URL`
+- `baro-dev/relocation/RELOCATION_DB_USERNAME`
+- `baro-dev/relocation/RELOCATION_DB_PASSWORD`
+- `baro-dev/relocation/INTERNAL_API_KEY`
 
 AWS Console에서 secret 값을 넣으려면:
 
@@ -266,7 +313,10 @@ AWS CLI 예시:
 ```bash
 aws secretsmanager put-secret-value --secret-id baro-dev/user/JWT_SECRET --secret-string '...'
 aws secretsmanager put-secret-value --secret-id baro-dev/dispatch/KAKAO_MOBILITY_API_KEY --secret-string '...'
+aws secretsmanager put-secret-value --secret-id baro-dev/dispatch/INTERNAL_API_KEY --secret-string '...'
 ```
+
+`INTERNAL_API_KEY`는 기본적으로 기존 `baro-dev/dispatch/INTERNAL_API_KEY` secret을 공유 참조합니다. Terraform은 `dispatch`, `relocation` 컨테이너에 이 값을 주입합니다. `baro-dev/relocation/INTERNAL_API_KEY` placeholder는 기존 리소스 유지를 위해 남기지만 컨테이너 주입에는 사용하지 않습니다. `control-service`는 현재 이 값을 읽거나 전송하지 않으므로 주입 대상이 아닙니다.
 
 ## Terraform GitHub Actions
 
