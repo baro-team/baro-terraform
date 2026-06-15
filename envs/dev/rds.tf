@@ -88,7 +88,7 @@ resource "aws_db_instance" "postgres" {
   }
 
   lifecycle {
-    ignore_changes = [snapshot_identifier, db_name]
+    ignore_changes = [snapshot_identifier, db_name, username]
   }
 }
 
