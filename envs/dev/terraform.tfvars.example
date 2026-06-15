@@ -21,18 +21,22 @@ rds_allocated_storage = 20
 rds_database_name     = "baro"
 rds_master_username   = "baroadmin"
 
-# Start with user-service running and dispatch-service infrastructure prepared.
-# Add more later, for example: ["user", "dispatch", "relocation", "control"]
-enabled_services = ["user", "dispatch"]
+# Start API traffic through gateway-service.
+# Add frontend services later, for example: ["gateway", "user", "dispatch", "relocation", "control", "mobile", "admin"]
+enabled_services = ["gateway", "user", "dispatch"]
 
 service_desired_counts = {
+  gateway  = 1
   user     = 1
   dispatch = 1
 }
 
-# Optional plain environment overrides, by service key: control, dispatch, relocation, user.
+# Optional plain environment overrides, by service key: gateway, control, dispatch, relocation, user.
 service_environment = {
   control = {
     # DISPATCH_SERVICE_URL is modeled as a secret by default.
   }
 }
+
+# Existing Secrets Manager secret used by /internal/** API receivers.
+internal_api_key_secret_name = "baro-dev/dispatch/INTERNAL_API_KEY"

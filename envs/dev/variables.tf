@@ -85,11 +85,11 @@ variable "service_memory" {
 variable "enabled_services" {
   description = "Services to create in dev."
   type        = set(string)
-  default     = ["user", "dispatch", "control", "admin", "relocation", "mobile"]
+  default     = ["gateway", "user", "dispatch", "control", "admin", "relocation", "mobile"]
 
   validation {
-    condition     = alltrue([for service in var.enabled_services : contains(["control", "dispatch", "relocation", "user", "admin", "mobile"], service)])
-    error_message = "enabled_services must contain only: control, dispatch, relocation, user, admin, mobile."
+    condition     = alltrue([for service in var.enabled_services : contains(["gateway", "control", "dispatch", "relocation", "user", "admin", "mobile"], service)])
+    error_message = "enabled_services must contain only: gateway, control, dispatch, relocation, user, admin, mobile."
   }
 }
 
@@ -106,6 +106,12 @@ variable "service_environment" {
   description = "Additional non-secret environment variables by service name."
   type        = map(map(string))
   default     = {}
+}
+
+variable "internal_api_key_secret_name" {
+  description = "Existing Secrets Manager secret name that stores INTERNAL_API_KEY for service-to-service internal APIs."
+  type        = string
+  default     = "baro-dev/dispatch/INTERNAL_API_KEY"
 }
 
 variable "rds_engine_version" {

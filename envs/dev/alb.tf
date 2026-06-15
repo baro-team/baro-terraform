@@ -67,7 +67,7 @@ resource "aws_lb_listener" "https" {
 }
 
 resource "aws_lb_listener_rule" "service" {
-  for_each = local.runtime_services
+  for_each = local.public_alb_services
 
   listener_arn = aws_lb_listener.https[0].arn
   priority     = each.value.priority

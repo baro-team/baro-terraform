@@ -69,10 +69,6 @@ resource "aws_ecs_task_definition" "service" {
           {
             name      = "DISPATCH_DB_PASSWORD"
             valueFrom = "${aws_secretsmanager_secret.rds_master.arn}:password::"
-          },
-          {
-            name      = "JWT_SECRET"
-            valueFrom = aws_secretsmanager_secret.service["user/JWT_SECRET"].arn
           }
         ] : [],
         each.key == "user" ? [
@@ -83,6 +79,18 @@ resource "aws_ecs_task_definition" "service" {
           {
             name      = "USER_DB_PASSWORD"
             valueFrom = "${aws_secretsmanager_secret.rds_master.arn}:password::"
+          }
+        ] : [],
+        each.key == "gateway" ? [
+          {
+            name      = "JWT_SECRET"
+            valueFrom = aws_secretsmanager_secret.service["user/JWT_SECRET"].arn
+          }
+        ] : [],
+        contains(["dispatch", "relocation"], each.key) ? [
+          {
+            name      = "INTERNAL_API_KEY"
+            valueFrom = data.aws_secretsmanager_secret.internal_api_key.arn
           }
         ] : []
       )
@@ -122,6 +130,10 @@ resource "aws_ecs_service" "service" {
     target_group_arn = aws_lb_target_group.service[each.key].arn
     container_name   = each.value.module
     container_port   = each.value.container_port
+  }
+
+  service_registries {
+    registry_arn = aws_service_discovery_service.service[each.key].arn
   }
 
   depends_on = [aws_lb_listener.https]
