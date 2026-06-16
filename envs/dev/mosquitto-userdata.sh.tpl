@@ -7,9 +7,11 @@ dnf update -y
 dnf install -y docker
 systemctl enable --now docker
 
-# SSM agent를 Docker 대기 전에 재시작 — Docker가 실패해도 SSM으로 디버깅 가능
+# dnf update 후 amazon-ssm-agent 유닛 파일이 사라질 수 있으므로 명시적 재설치
+dnf install -y amazon-ssm-agent
+systemctl daemon-reload
 systemctl enable amazon-ssm-agent
-systemctl restart amazon-ssm-agent || true
+systemctl start amazon-ssm-agent || true
 
 # Docker daemon 준비 대기 (최대 120초)
 MAX_RETRIES=120
