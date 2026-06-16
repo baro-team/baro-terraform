@@ -1,6 +1,6 @@
 #!/bin/bash
 set -euo pipefail
-exec > /var/log/user-data.log 2>&1
+exec > >(tee /var/log/user-data.log) 2>&1
 echo "[$(date -u)] user-data START"
 
 dnf update -y
@@ -9,7 +9,7 @@ systemctl enable --now docker
 
 # SSM agent를 Docker 대기 전에 재시작 — Docker가 실패해도 SSM으로 디버깅 가능
 systemctl enable amazon-ssm-agent
-systemctl restart amazon-ssm-agent
+systemctl restart amazon-ssm-agent || true
 
 # Docker daemon 준비 대기 (최대 120초)
 MAX_RETRIES=120
