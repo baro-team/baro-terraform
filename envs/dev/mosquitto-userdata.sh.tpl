@@ -32,8 +32,8 @@ MQTT_SECRET=$(aws secretsmanager get-secret-value \
   --region "${region}" \
   --query SecretString \
   --output text)
-MQTT_USER=$(echo "$MQTT_SECRET" | python3 -c "import sys,json; print(json.load(sys.stdin)['username'])")
-MQTT_PASS=$(echo "$MQTT_SECRET" | python3 -c "import sys,json; print(json.load(sys.stdin)['password'])")
+MQTT_USER=$(printf '%s\n' "$MQTT_SECRET" | python3 -c "import sys,json; print(json.load(sys.stdin)['username'])")
+MQTT_PASS=$(printf '%s\n' "$MQTT_SECRET" | python3 -c "import sys,json; print(json.load(sys.stdin)['password'])")
 
 mkdir -p /opt/mosquitto/config /opt/mosquitto/data
 
@@ -50,6 +50,7 @@ log_type notice
 EOF
 
 echo "[$(date -u)] Creating mosquitto passwd file"
+chown -R 1883:1883 /opt/mosquitto
 printf "%s\n%s\n" "$MQTT_PASS" "$MQTT_PASS" | docker run --rm -i \
   -v /opt/mosquitto/config:/etc/mosquitto \
   eclipse-mosquitto:2 \
