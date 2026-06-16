@@ -33,16 +33,14 @@ locals {
       health_check_path = "/actuator/health"
       extra_environment = {
         BARO_ERROR_INCLUDE_DETAILS = "true"
-        MQTT_MODE                  = "aws"
-        IOT_ENDPOINT               = "a7xnpqbtrafiw-ats.iot.ap-northeast-2.amazonaws.com"
-        IOT_CA_PATH                = "certs/AmazonRootCA1.pem"
-        IOT_CERT_PATH              = "certs/cert.pem.crt"
-        IOT_KEY_PATH               = "certs/private.pem.key"
+        MQTT_MODE                  = "local"
+        LOCAL_MQTT_HOST            = aws_instance.mosquitto.private_ip
+        LOCAL_MQTT_PORT            = "1883"
         KAFKA_BOOTSTRAP_SERVERS    = "kafka.${aws_service_discovery_private_dns_namespace.this.name}:9092"
         KAFKA_TOPIC                = "vehicle-data-topic"
         DISPATCH_SERVICE_URL       = "http://dispatch-service.${aws_service_discovery_private_dns_namespace.this.name}:8082"
       }
-      secret_names = ["IOT_CA_CERT", "IOT_CERT", "IOT_KEY"]
+      secret_names = []
     }
 
     dispatch = {

@@ -81,6 +81,31 @@ resource "aws_security_group" "kafka" {
   }
 }
 
+resource "aws_security_group" "mosquitto" {
+  name        = "${local.name_prefix}-mosquitto"
+  description = "Mosquitto MQTT broker — allow from ECS tasks"
+  vpc_id      = aws_vpc.this.id
+
+  ingress {
+    description     = "MQTT from ECS tasks"
+    from_port       = 1883
+    to_port         = 1883
+    protocol        = "tcp"
+    security_groups = [aws_security_group.ecs_tasks.id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-mosquitto"
+  })
+}
+
 resource "aws_security_group" "redis" {
   name        = "${local.name_prefix}-redis"
   description = "Redis access from ECS tasks"
