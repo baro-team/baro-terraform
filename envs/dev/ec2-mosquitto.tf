@@ -170,19 +170,7 @@ EOF
       -v /opt/mosquitto/data:/mosquitto/data \
       eclipse-mosquitto:2
 
-    # ECR 로그인 후 baro-edge 실행
-    ECR_REGISTRY=$(echo "${aws_ecr_repository.baro_edge.repository_url}" | cut -d'/' -f1)
-    aws ecr get-login-password --region ${var.aws_region} | \
-      docker login --username AWS --password-stdin "$ECR_REGISTRY"
-
-    docker run -d --name baro-edge \
-      --network baro-edge-net \
-      --restart unless-stopped \
-      -e MQTT_BROKER_HOST=mosquitto \
-      -e MQTT_BROKER_PORT=1883 \
-      -e MQTT_USERNAME="$MQTT_USER" \
-      -e MQTT_PASSWORD="$MQTT_PASS" \
-      ${aws_ecr_repository.baro_edge.repository_url}:${var.image_tag}
+    # baro-edge는 GitHub Actions CI/CD (SSM send-command)로 배포됨
     USERDATA
   )
 
