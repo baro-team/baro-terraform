@@ -11,7 +11,7 @@ systemctl enable --now docker
 dnf install -y amazon-ssm-agent
 systemctl daemon-reload
 systemctl enable amazon-ssm-agent
-systemctl start amazon-ssm-agent
+systemctl start amazon-ssm-agent || true
 
 # Docker daemon 준비 대기 (최대 120초)
 MAX_RETRIES=120
