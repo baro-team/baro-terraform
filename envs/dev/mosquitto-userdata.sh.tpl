@@ -38,6 +38,8 @@ MQTT_USER=$(printf '%s\n' "$MQTT_SECRET" | python3 -c "import sys,json; print(js
 MQTT_PASS=$(printf '%s\n' "$MQTT_SECRET" | python3 -c "import sys,json; print(json.load(sys.stdin)['password'])")
 
 mkdir -p /opt/mosquitto/config /opt/mosquitto/data
+# docker run(mosquitto_passwd)이 uid 1883으로 실행되므로 디렉터리 쓰기 권한 필요
+chown -R 1883:1883 /opt/mosquitto
 
 cat > /opt/mosquitto/config/mosquitto.conf <<'EOF'
 listener 1883
@@ -57,7 +59,7 @@ printf "%s\n%s\n" "$MQTT_PASS" "$MQTT_PASS" | docker run --rm -i \
   eclipse-mosquitto:2 \
   mosquitto_passwd -c /etc/mosquitto/passwd "$MQTT_USER"
 
-# 파일 생성 후 chown — 생성 전에 하면 root 소유 파일을 uid 1883이 읽지 못함
+# mosquitto_passwd가 root로 실행될 경우 passwd가 root 소유로 생성될 수 있으므로 재적용
 chown -R 1883:1883 /opt/mosquitto
 chmod 600 /opt/mosquitto/config/passwd
 
