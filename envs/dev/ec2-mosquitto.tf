@@ -125,6 +125,10 @@ resource "aws_instance" "mosquitto" {
     dnf install -y docker
     systemctl enable --now docker
 
+    # dnf update로 amazon-ssm-agent가 업데이트된 후 서비스가 비활성화될 수 있으므로 명시적 재시작
+    systemctl enable amazon-ssm-agent
+    systemctl restart amazon-ssm-agent
+
     # Docker 브리지 네트워크 생성 (컨테이너 간 이름으로 통신)
     docker network create baro-edge-net
 
