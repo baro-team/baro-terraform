@@ -6,7 +6,13 @@ echo "[$(date -u)] user-data START"
 dnf update -y
 dnf install -y docker
 systemctl enable --now docker
-MAX_RETRIES=30
+
+# SSM agent를 Docker 대기 전에 재시작 — Docker가 실패해도 SSM으로 디버깅 가능
+systemctl enable amazon-ssm-agent
+systemctl restart amazon-ssm-agent
+
+# Docker daemon 준비 대기 (최대 120초)
+MAX_RETRIES=120
 RETRY_COUNT=0
 until docker info >/dev/null 2>&1; do
   if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
@@ -18,9 +24,6 @@ until docker info >/dev/null 2>&1; do
   RETRY_COUNT=$((RETRY_COUNT + 1))
 done
 
-systemctl enable amazon-ssm-agent
-systemctl restart amazon-ssm-agent
-
 docker network inspect baro-edge-net >/dev/null 2>&1 || docker network create baro-edge-net
 
 echo "[$(date -u)] Fetching MQTT credentials"
@@ -29,10 +32,11 @@ MQTT_SECRET=$(aws secretsmanager get-secret-value \
   --region "${region}" \
   --query SecretString \
   --output text)
-MQTT_USER=$(echo "$MQTT_SECRET" | python3 -c "import sys,json; print(json.load(sys.stdin)['username'])")
-MQTT_PASS=$(echo "$MQTT_SECRET" | python3 -c "import sys,json; print(json.load(sys.stdin)['password'])")
+MQTT_USER=$(printf '%s\n' "$MQTT_SECRET" | python3 -c "import sys,json; print(json.load(sys.stdin)['username'])")
+MQTT_PASS=$(printf '%s\n' "$MQTT_SECRET" | python3 -c "import sys,json; print(json.load(sys.stdin)['password'])")
 
 mkdir -p /opt/mosquitto/config /opt/mosquitto/data
+chown -R 1883:1883 /opt/mosquitto
 
 cat > /opt/mosquitto/config/mosquitto.conf <<'EOF'
 listener 1883
