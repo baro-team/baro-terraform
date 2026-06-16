@@ -92,6 +92,16 @@ resource "aws_ecs_task_definition" "service" {
             name      = "INTERNAL_API_KEY"
             valueFrom = data.aws_secretsmanager_secret.internal_api_key.arn
           }
+        ] : [],
+        each.key == "control" ? [
+          {
+            name      = "MQTT_USERNAME"
+            valueFrom = "${aws_secretsmanager_secret.mosquitto_credentials.arn}:username::"
+          },
+          {
+            name      = "MQTT_PASSWORD"
+            valueFrom = "${aws_secretsmanager_secret.mosquitto_credentials.arn}:password::"
+          }
         ] : []
       )
 

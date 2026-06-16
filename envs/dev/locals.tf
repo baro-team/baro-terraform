@@ -34,7 +34,7 @@ locals {
       extra_environment = {
         BARO_ERROR_INCLUDE_DETAILS = "true"
         MQTT_MODE                  = "local"
-        LOCAL_MQTT_HOST            = aws_instance.mosquitto.private_ip
+        LOCAL_MQTT_HOST            = var.runtime_enabled ? aws_instance.mosquitto[0].private_ip : ""
         LOCAL_MQTT_PORT            = "1883"
         KAFKA_BOOTSTRAP_SERVERS    = "kafka.${aws_service_discovery_private_dns_namespace.this.name}:9092"
         KAFKA_TOPIC                = "vehicle-data-topic"
