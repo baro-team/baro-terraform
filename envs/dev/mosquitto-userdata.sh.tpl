@@ -59,8 +59,8 @@ printf "%s\n%s\n" "$MQTT_PASS" "$MQTT_PASS" | docker run --rm -i \
   eclipse-mosquitto:2 \
   mosquitto_passwd -c /etc/mosquitto/passwd "$MQTT_USER"
 
-# mosquitto_passwd가 root로 실행될 경우 passwd가 root 소유로 생성될 수 있으므로 재적용
-chown -R 1883:1883 /opt/mosquitto
+# mosquitto_passwd가 root로 실행될 경우 passwd가 root 소유로 생성될 수 있으므로 소유권 재설정
+chown 1883:1883 /opt/mosquitto/config/passwd
 chmod 600 /opt/mosquitto/config/passwd
 
 echo "[$(date -u)] Starting mosquitto container"
