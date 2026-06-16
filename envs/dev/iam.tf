@@ -47,8 +47,8 @@ resource "aws_iam_role" "ecs_task" {
 
 data "aws_iam_policy_document" "github_actions_baro_edge" {
   statement {
-    sid     = "EC2Describe"
-    actions = ["ec2:DescribeInstances"]
+    sid       = "EC2Describe"
+    actions   = ["ec2:DescribeInstances"]
     resources = ["*"]
   }
 
