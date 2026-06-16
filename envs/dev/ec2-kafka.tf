@@ -63,14 +63,18 @@ resource "aws_ebs_volume" "kafka_data" {
 }
 
 resource "aws_volume_attachment" "kafka_data" {
+  count = var.runtime_enabled ? 1 : 0
+
   device_name = "/dev/sdf"
   volume_id   = aws_ebs_volume.kafka_data.id
-  instance_id = aws_instance.kafka.id
+  instance_id = one(aws_instance.kafka[*].id)
 }
 
 # ── EC2 ──────────────────────────────────────────────────────────────────────
 
 resource "aws_instance" "kafka" {
+  count = var.runtime_enabled ? 1 : 0
+
   ami                    = data.aws_ami.amazon_linux_2023.id
   instance_type          = "t3.small"
   subnet_id              = values(aws_subnet.private)[0].id
