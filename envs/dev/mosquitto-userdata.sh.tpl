@@ -6,9 +6,16 @@ echo "[$(date -u)] user-data START"
 dnf update -y
 dnf install -y docker
 systemctl enable --now docker
+MAX_RETRIES=30
+RETRY_COUNT=0
 until docker info >/dev/null 2>&1; do
+  if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+    echo "Docker daemon failed to start after $MAX_RETRIES seconds. Exiting."
+    exit 1
+  fi
   echo "Waiting for Docker daemon..."
   sleep 1
+  RETRY_COUNT=$((RETRY_COUNT + 1))
 done
 
 systemctl enable amazon-ssm-agent
