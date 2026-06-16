@@ -1,4 +1,19 @@
 moved {
+  from = aws_instance.kafka
+  to   = aws_instance.kafka[0]
+}
+
+moved {
+  from = aws_volume_attachment.kafka_data
+  to   = aws_volume_attachment.kafka_data[0]
+}
+
+moved {
+  from = aws_service_discovery_instance.kafka
+  to   = aws_service_discovery_instance.kafka[0]
+}
+
+moved {
   from = aws_security_group_rule.alb_to_tasks["admin"]
   to   = aws_security_group_rule.alb_to_tasks["80"]
 }
