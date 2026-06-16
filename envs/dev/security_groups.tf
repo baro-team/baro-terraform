@@ -83,7 +83,7 @@ resource "aws_security_group" "kafka" {
 
 resource "aws_security_group" "mosquitto" {
   name        = "${local.name_prefix}-mosquitto"
-  description = "Mosquitto MQTT broker — allow from ECS tasks"
+  description = "Mosquitto MQTT broker - allow from ECS tasks"
   vpc_id      = aws_vpc.this.id
 
   ingress {
