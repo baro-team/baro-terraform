@@ -10,7 +10,7 @@ systemctl enable --now docker
 systemctl enable amazon-ssm-agent
 systemctl restart amazon-ssm-agent
 
-docker network create baro-edge-net
+docker network inspect baro-edge-net >/dev/null 2>&1 || docker network create baro-edge-net
 
 echo "[$(date -u)] Fetching MQTT credentials"
 MQTT_SECRET=$(aws secretsmanager get-secret-value \
@@ -36,14 +36,15 @@ log_type notice
 EOF
 
 echo "[$(date -u)] Creating mosquitto passwd file"
-docker run --rm \
+printf "%s\n%s\n" "$$MQTT_PASS" "$$MQTT_PASS" | docker run --rm -i \
   -v /opt/mosquitto/config:/etc/mosquitto \
   eclipse-mosquitto:2 \
-  mosquitto_passwd -b /etc/mosquitto/passwd "$$MQTT_USER" "$$MQTT_PASS"
+  mosquitto_passwd -c /etc/mosquitto/passwd "$$MQTT_USER"
 
 chmod 600 /opt/mosquitto/config/passwd
 
 echo "[$(date -u)] Starting mosquitto container"
+docker rm -f mosquitto || true
 docker run -d --name mosquitto \
   --network baro-edge-net \
   --restart unless-stopped \
