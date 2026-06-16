@@ -6,6 +6,17 @@ echo "[$(date -u)] user-data START"
 dnf update -y
 dnf install -y docker
 systemctl enable --now docker
+MAX_RETRIES=30
+RETRY_COUNT=0
+until docker info >/dev/null 2>&1; do
+  if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+    echo "Docker daemon failed to start after $MAX_RETRIES seconds. Exiting."
+    exit 1
+  fi
+  echo "Waiting for Docker daemon..."
+  sleep 1
+  RETRY_COUNT=$((RETRY_COUNT + 1))
+done
 
 systemctl enable amazon-ssm-agent
 systemctl restart amazon-ssm-agent
@@ -18,8 +29,8 @@ MQTT_SECRET=$(aws secretsmanager get-secret-value \
   --region "${region}" \
   --query SecretString \
   --output text)
-MQTT_USER=$(echo "$$MQTT_SECRET" | python3 -c "import sys,json; print(json.load(sys.stdin)['username'])")
-MQTT_PASS=$(echo "$$MQTT_SECRET" | python3 -c "import sys,json; print(json.load(sys.stdin)['password'])")
+MQTT_USER=$(echo "$MQTT_SECRET" | python3 -c "import sys,json; print(json.load(sys.stdin)['username'])")
+MQTT_PASS=$(echo "$MQTT_SECRET" | python3 -c "import sys,json; print(json.load(sys.stdin)['password'])")
 
 mkdir -p /opt/mosquitto/config /opt/mosquitto/data
 
@@ -36,10 +47,10 @@ log_type notice
 EOF
 
 echo "[$(date -u)] Creating mosquitto passwd file"
-printf "%s\n%s\n" "$$MQTT_PASS" "$$MQTT_PASS" | docker run --rm -i \
+printf "%s\n%s\n" "$MQTT_PASS" "$MQTT_PASS" | docker run --rm -i \
   -v /opt/mosquitto/config:/etc/mosquitto \
   eclipse-mosquitto:2 \
-  mosquitto_passwd -c /etc/mosquitto/passwd "$$MQTT_USER"
+  mosquitto_passwd -c /etc/mosquitto/passwd "$MQTT_USER"
 
 chmod 600 /opt/mosquitto/config/passwd
 
