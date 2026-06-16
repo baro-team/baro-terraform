@@ -6,6 +6,10 @@ echo "[$(date -u)] user-data START"
 dnf update -y
 dnf install -y docker
 systemctl enable --now docker
+until docker info >/dev/null 2>&1; do
+  echo "Waiting for Docker daemon..."
+  sleep 1
+done
 
 systemctl enable amazon-ssm-agent
 systemctl restart amazon-ssm-agent
