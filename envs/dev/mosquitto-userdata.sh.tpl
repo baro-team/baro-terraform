@@ -1,6 +1,6 @@
 #!/bin/bash
 set -euo pipefail
-exec > >(tee /var/log/user-data.log > /dev/console) 2>&1
+exec > >(tee /var/log/user-data.log) 2>&1
 echo "[$(date -u)] user-data START"
 
 dnf update -y
