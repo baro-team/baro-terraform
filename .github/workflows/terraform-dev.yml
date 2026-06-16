@@ -263,7 +263,9 @@ jobs:
           echo "DB init task completed successfully"
 
       - name: Deploy baro-edge
-        if: github.event_name == 'workflow_dispatch' && inputs.action == 'apply'
+        if: >-
+          (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+          (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')
         run: |
           INSTANCE_ID=$(aws ec2 describe-instances \
             --filters \
