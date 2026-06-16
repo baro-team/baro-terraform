@@ -22,11 +22,11 @@ resource "aws_service_discovery_service" "kafka" {
 resource "aws_service_discovery_instance" "kafka" {
   count = var.runtime_enabled ? 1 : 0
 
-  instance_id = aws_instance.kafka[0].id
+  instance_id = one(aws_instance.kafka[*].id)
   service_id  = aws_service_discovery_service.kafka.id
 
   attributes = {
-    AWS_INSTANCE_IPV4 = aws_instance.kafka[0].private_ip
+    AWS_INSTANCE_IPV4 = one(aws_instance.kafka[*].private_ip)
   }
 }
 

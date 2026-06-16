@@ -67,7 +67,7 @@ resource "aws_volume_attachment" "kafka_data" {
 
   device_name = "/dev/sdf"
   volume_id   = aws_ebs_volume.kafka_data.id
-  instance_id = aws_instance.kafka[0].id
+  instance_id = one(aws_instance.kafka[*].id)
 }
 
 # ── EC2 ──────────────────────────────────────────────────────────────────────
