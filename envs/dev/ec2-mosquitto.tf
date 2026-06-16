@@ -118,65 +118,14 @@ resource "aws_instance" "mosquitto" {
     encrypted   = true
   }
 
-  user_data = base64encode(<<-USERDATA
-    #!/bin/bash
-    set -euo pipefail
-    dnf update -y
-    dnf install -y docker
-    systemctl enable --now docker
+  # templatefile() 사용: <<-USERDATA 헤레독은 앞 공백을 제거하지 않아 #!/bin/bash가
+  # 컬럼 0에 위치하지 않으면 cloud-init이 스크립트로 인식하지 못함
+  user_data_base64 = base64encode(templatefile("${path.module}/mosquitto-userdata.sh.tpl", {
+    secret_arn = aws_secretsmanager_secret.mosquitto_credentials.arn
+    region     = var.aws_region
+  }))
 
-    # dnf update로 amazon-ssm-agent가 업데이트된 후 서비스가 비활성화될 수 있으므로 명시적 재시작
-    systemctl enable amazon-ssm-agent
-    systemctl restart amazon-ssm-agent
-
-    # Docker 브리지 네트워크 생성 (컨테이너 간 이름으로 통신)
-    docker network create baro-edge-net
-
-    # Secrets Manager에서 MQTT 자격증명 가져오기
-    MQTT_SECRET=$(aws secretsmanager get-secret-value \
-      --secret-id "${aws_secretsmanager_secret.mosquitto_credentials.arn}" \
-      --region ${var.aws_region} \
-      --query SecretString \
-      --output text)
-    MQTT_USER=$(echo "$MQTT_SECRET" | python3 -c "import sys,json; print(json.load(sys.stdin)['username'])")
-    MQTT_PASS=$(echo "$MQTT_SECRET" | python3 -c "import sys,json; print(json.load(sys.stdin)['password'])")
-
-    # Mosquitto 설정 파일 생성
-    mkdir -p /opt/mosquitto/config /opt/mosquitto/data
-
-    cat > /opt/mosquitto/config/mosquitto.conf <<'EOF'
-listener 1883
-allow_anonymous false
-password_file /mosquitto/config/passwd
-persistence true
-persistence_location /mosquitto/data/
-log_dest stdout
-log_type error
-log_type warning
-log_type notice
-EOF
-
-    # passwd 파일 생성 (mosquitto_passwd 도구 사용)
-    docker run --rm \
-      -v /opt/mosquitto/config:/etc/mosquitto \
-      eclipse-mosquitto:2 \
-      mosquitto_passwd -b /etc/mosquitto/passwd "$MQTT_USER" "$MQTT_PASS"
-
-    chmod 600 /opt/mosquitto/config/passwd
-
-    # Mosquitto 2.x 실행 ($share 구독 지원)
-    docker run -d --name mosquitto \
-      --network baro-edge-net \
-      --restart unless-stopped \
-      -p 1883:1883 \
-      -v /opt/mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf \
-      -v /opt/mosquitto/config/passwd:/mosquitto/config/passwd \
-      -v /opt/mosquitto/data:/mosquitto/data \
-      eclipse-mosquitto:2
-
-    # baro-edge는 GitHub Actions CI/CD (SSM send-command)로 배포됨
-    USERDATA
-  )
+  user_data_replace_on_change = true
 
   tags = merge(local.common_tags, {
     Name = "${local.name_prefix}-mosquitto"
