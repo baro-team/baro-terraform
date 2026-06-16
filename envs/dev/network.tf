@@ -185,7 +185,7 @@ locals {
 }
 
 resource "aws_vpc_endpoint" "ssm" {
-  for_each = var.runtime_enabled ? toset(local.ssm_endpoint_services) : []
+  for_each = var.runtime_enabled ? toset(local.ssm_endpoint_services) : toset([])
 
   vpc_id              = aws_vpc.this.id
   service_name        = "com.amazonaws.${var.aws_region}.${each.key}"
