@@ -132,6 +132,23 @@ resource "aws_instance" "kafka" {
       -e KAFKA_LOG_DIRS=/var/kafka-data \
       -e KAFKA_HEAP_OPTS="-Xms256M -Xmx512M" \
       ${data.aws_ecr_repository.kafka.repository_url}:${var.image_tag}
+
+    echo "[$(date -u)] Waiting for Kafka to be ready..."
+    until docker exec kafka kafka-topics --bootstrap-server localhost:9092 --list >/dev/null 2>&1; do
+      sleep 5
+    done
+
+    echo "[$(date -u)] Ensuring vehicle-data-topic has 4 partitions..."
+    CURRENT_PARTS=$(docker exec kafka kafka-topics --bootstrap-server localhost:9092 \
+      --describe --topic vehicle-data-topic 2>/dev/null | grep -c "Partition:" || true)
+    if [ "$${CURRENT_PARTS:-0}" -eq 0 ]; then
+      docker exec kafka kafka-topics --bootstrap-server localhost:9092 \
+        --create --topic vehicle-data-topic --partitions 4 --replication-factor 1
+    elif [ "$${CURRENT_PARTS:-0}" -lt 4 ]; then
+      docker exec kafka kafka-topics --bootstrap-server localhost:9092 \
+        --alter --topic vehicle-data-topic --partitions 4
+    fi
+    echo "[$(date -u)] vehicle-data-topic ready (partitions=$${CURRENT_PARTS:-created})"
     USERDATA
   )
 
