@@ -64,6 +64,7 @@ locals {
         KAFKA_DISPATCH_CONSUMER_GROUP_ID         = "dispatch-service"
         KAFKA_VEHICLE_DATA_TOPIC                 = "vehicle-data-topic"
         CONTROL_SERVICE_URL                      = "http://control-service.${aws_service_discovery_private_dns_namespace.this.name}:8081"
+        RELOCATION_SERVICE_URL                   = "http://relocation-service.${aws_service_discovery_private_dns_namespace.this.name}:8083"
       }
       secret_names = [
         "KAKAO_MOBILITY_API_KEY",
