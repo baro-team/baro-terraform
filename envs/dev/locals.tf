@@ -58,8 +58,10 @@ locals {
         REDIS_HOST                               = aws_elasticache_replication_group.redis.primary_endpoint_address
         REDIS_PORT                               = "6379"
         REDIS_SSL_ENABLED                        = "false"
-        DISPATCH_REDIS_IDLE_CAR_GEO_KEY          = "dispatch:cars:idle:geo"
-        DISPATCH_REDIS_IDLE_CAR_SEARCH_RADIUS_KM = "5.0"
+        DISPATCH_REDIS_IDLE_CAR_GEO_KEY                  = "dispatch:cars:idle:geo"
+        DISPATCH_REDIS_IDLE_CAR_SEARCH_RADIUS_KM         = "5.0"
+        DISPATCH_REDIS_STALENESS_THRESHOLD_SECONDS       = "300"
+        KAFKA_DISPATCH_CONCURRENCY                       = "4"
         DISPATCH_DB_URL                          = var.runtime_enabled ? "jdbc:postgresql://${aws_db_instance.postgres[0].address}:${aws_db_instance.postgres[0].port}/${local.effective_db_name}?currentSchema=dispatch_service" : ""
         KAFKA_BOOTSTRAP_SERVERS                  = "kafka.${aws_service_discovery_private_dns_namespace.this.name}:9092"
         KAFKA_DISPATCH_CONSUMER_GROUP_ID         = "dispatch-service"
