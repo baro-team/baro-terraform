@@ -134,8 +134,15 @@ resource "aws_instance" "kafka" {
       ${data.aws_ecr_repository.kafka.repository_url}:${var.image_tag}
 
     echo "[$(date -u)] Waiting for Kafka to be ready..."
+    MAX_RETRIES=30
+    RETRY_COUNT=0
     until docker exec kafka kafka-topics --bootstrap-server localhost:9092 --list >/dev/null 2>&1; do
+      if [ "$${RETRY_COUNT}" -eq "$${MAX_RETRIES}" ]; then
+        echo "[$(date -u)] Kafka failed to start after $((MAX_RETRIES * 5)) seconds. Exiting."
+        exit 1
+      fi
       sleep 5
+      RETRY_COUNT=$((RETRY_COUNT + 1))
     done
 
     echo "[$(date -u)] Ensuring vehicle-data-topic has 4 partitions..."
