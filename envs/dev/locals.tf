@@ -39,6 +39,7 @@ locals {
         KAFKA_BOOTSTRAP_SERVERS    = "kafka.${aws_service_discovery_private_dns_namespace.this.name}:9092"
         KAFKA_TOPIC                = "vehicle-data-topic"
         DISPATCH_SERVICE_URL       = "http://dispatch-service.${aws_service_discovery_private_dns_namespace.this.name}:8082"
+        RELOCATION_SERVICE_URL     = "http://relocation-service.${aws_service_discovery_private_dns_namespace.this.name}:8083"
       }
       secret_names = []
     }
@@ -64,6 +65,7 @@ locals {
         KAFKA_DISPATCH_CONSUMER_GROUP_ID         = "dispatch-service"
         KAFKA_VEHICLE_DATA_TOPIC                 = "vehicle-data-topic"
         CONTROL_SERVICE_URL                      = "http://control-service.${aws_service_discovery_private_dns_namespace.this.name}:8081"
+        RELOCATION_SERVICE_URL                   = "http://relocation-service.${aws_service_discovery_private_dns_namespace.this.name}:8083"
       }
       secret_names = [
         "KAKAO_MOBILITY_API_KEY",
@@ -80,11 +82,13 @@ locals {
       extra_environment = {
         BARO_ERROR_INCLUDE_DETAILS    = "true"
         SPRING_JPA_HIBERNATE_DDL_AUTO = "update"
+        CONTROL_SERVICE_URL           = "http://control-service.${aws_service_discovery_private_dns_namespace.this.name}:8081"
       }
       secret_names = [
         "RELOCATION_DB_URL",
         "RELOCATION_DB_USERNAME",
         "RELOCATION_DB_PASSWORD",
+        "KAKAO_MOBILITY_API_KEY",
         "INTERNAL_API_KEY"
       ]
     }
