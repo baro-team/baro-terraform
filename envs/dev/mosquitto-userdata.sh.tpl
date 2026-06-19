@@ -51,6 +51,7 @@ log_dest stdout
 log_type error
 log_type warning
 log_type notice
+max_queued_messages 10000
 EOF
 
 echo "[$(date -u)] Creating mosquitto passwd file"
