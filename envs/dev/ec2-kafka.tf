@@ -140,7 +140,7 @@ resource "aws_instance" "kafka" {
 
     echo "[$(date -u)] Ensuring vehicle-data-topic has 4 partitions..."
     CURRENT_PARTS=$(docker exec kafka kafka-topics --bootstrap-server localhost:9092 \
-      --describe --topic vehicle-data-topic 2>/dev/null | grep -c "Partition:" || true)
+      --describe --topic vehicle-data-topic 2>/dev/null | grep -v "PartitionCount" | grep -c "Partition:" || true)
     if [ "$${CURRENT_PARTS:-0}" -eq 0 ]; then
       docker exec kafka kafka-topics --bootstrap-server localhost:9092 \
         --create --topic vehicle-data-topic --partitions 4 --replication-factor 1
