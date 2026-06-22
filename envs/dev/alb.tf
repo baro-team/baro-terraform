@@ -77,7 +77,7 @@ resource "aws_lb_listener" "https" {
 
   default_action {
     type             = contains(keys(local.ecs_codedeploy_services), "mobile") ? "forward" : "fixed-response"
-    target_group_arn = contains(keys(local.ecs_codedeploy_services), "mobile") ? aws_lb_target_group.service["mobile"].arn : null
+    target_group_arn = try(aws_lb_target_group.service["mobile"].arn, null)
 
     dynamic "fixed_response" {
       for_each = contains(keys(local.ecs_codedeploy_services), "mobile") ? [] : [1]
@@ -88,6 +88,12 @@ resource "aws_lb_listener" "https" {
         status_code  = "404"
       }
     }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      default_action,
+    ]
   }
 }
 resource "aws_lb_listener_rule" "block_internal" {
