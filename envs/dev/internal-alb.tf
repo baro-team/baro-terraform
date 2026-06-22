@@ -46,6 +46,24 @@ resource "aws_lb_target_group" "internal_service" {
   }
 }
 
+resource "aws_lb_listener_rule" "gateway_prometheus_metrics" {
+  count = contains(keys(local.internal_alb_services), "gateway") ? 1 : 0
+
+  listener_arn = aws_lb_listener.internal_https[0].arn
+  priority     = 20
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.internal_service["gateway"].arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/actuator/prometheus"]
+    }
+  }
+}
+
 resource "aws_lb_listener_rule" "internal_service" {
   for_each = local.internal_alb_services
 
