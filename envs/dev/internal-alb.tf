@@ -58,6 +58,12 @@ resource "aws_lb_listener_rule" "gateway_prometheus_metrics" {
   }
 
   condition {
+    host_header {
+      values = ["internal-${local.app_domain_name}"]
+    }
+  }
+
+  condition {
     path_pattern {
       values = ["/actuator/prometheus"]
     }
