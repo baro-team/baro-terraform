@@ -96,6 +96,25 @@ resource "aws_lb_listener" "https" {
     ]
   }
 }
+
+resource "aws_lb_listener_rule" "mobile_codedeploy_bootstrap" {
+  count = contains(keys(local.ecs_codedeploy_services), "mobile") ? 1 : 0
+
+  listener_arn = aws_lb_listener.https[0].arn
+  priority     = 50000
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.service["mobile"].arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/__codedeploy/mobile-bootstrap"]
+    }
+  }
+}
+
 resource "aws_lb_listener_rule" "block_internal" {
   count        = var.runtime_enabled ? 1 : 0
   listener_arn = aws_lb_listener.https[0].arn
