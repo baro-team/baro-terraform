@@ -145,14 +145,33 @@ locals {
 
   runtime_services = var.runtime_enabled ? local.services : {}
 
+  ecs_codedeploy_service_keys = toset(["mobile"])
+
+  ecs_codedeploy_services = {
+    for key, service in local.runtime_services : key => service
+    if contains(local.ecs_codedeploy_service_keys, key)
+  }
+
+  ecs_rolling_services = {
+    for key, service in local.runtime_services : key => service
+    if !contains(local.ecs_codedeploy_service_keys, key)
+  }
+
   public_alb_services = {
     for key, service in local.runtime_services : key => service
     if contains(["gateway", "admin", "mobile"], key)
   }
 
+  public_alb_listener_rule_services = {
+    for key, service in local.public_alb_services : key => service
+    if !contains(local.ecs_codedeploy_service_keys, key)
+  }
+
+  internal_alb_services = local.ecs_rolling_services
+
   public_alb_listener_rules = {
     for rule in flatten([
-      for service_key, service in local.public_alb_services : [
+      for service_key, service in local.public_alb_listener_rule_services : [
         for chunk_index, path_patterns in chunklist(service.path_patterns, 5) : {
           key           = "${service_key}-${chunk_index}"
           service_key   = service_key
