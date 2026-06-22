@@ -142,7 +142,7 @@ resource "terraform_data" "mobile_codedeploy_listener_bootstrap" {
         --query 'Listeners[0].DefaultActions[0].TargetGroupArn' \
         --output text)"
 
-      if [ "$(target_count "$current_target_group_arn")" -gt 0 ]; then
+      if [ -n "$current_target_group_arn" ] && [ "$current_target_group_arn" != "None" ] && [ "$(target_count "$current_target_group_arn")" -gt 0 ]; then
         exit 0
       fi
 
