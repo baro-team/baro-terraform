@@ -107,6 +107,7 @@ resource "aws_instance" "kafka" {
     mkdir -p /var/kafka-data
     mount /dev/nvme1n1 /var/kafka-data
     echo '/dev/nvme1n1 /var/kafka-data ext4 defaults,nofail 0 2' >> /etc/fstab
+    rm -rf /var/kafka-data/lost+found
     chown 1000:1000 /var/kafka-data
 
     aws ecr get-login-password --region ${var.aws_region} | \
@@ -131,6 +132,9 @@ resource "aws_instance" "kafka" {
       -e CLUSTER_ID=MkU3OEVBNTcwNTJENDM2Qk \
       -e KAFKA_LOG_DIRS=/var/kafka-data \
       -e KAFKA_HEAP_OPTS="-Xms256M -Xmx512M" \
+      -e KAFKA_LOG_RETENTION_MS=3600000 \
+      -e KAFKA_LOG_RETENTION_BYTES=1073741824 \
+      -e KAFKA_LOG_SEGMENT_MS=60000 \
       ${data.aws_ecr_repository.kafka.repository_url}:${var.image_tag}
 
     echo "[$(date -u)] Waiting for Kafka to be ready..."
@@ -143,11 +147,17 @@ resource "aws_instance" "kafka" {
       --describe --topic vehicle-data-topic 2>/dev/null | grep -v "PartitionCount" | grep -c "Partition:" || true)
     if [ "$${CURRENT_PARTS:-0}" -eq 0 ]; then
       docker exec kafka kafka-topics --bootstrap-server localhost:9092 \
-        --create --topic vehicle-data-topic --partitions 4 --replication-factor 1
+        --create --topic vehicle-data-topic --partitions 4 --replication-factor 1 \
+        --config retention.ms=3600000 \
+        --config retention.bytes=1073741824 \
+        --config segment.ms=60000
     elif [ "$${CURRENT_PARTS:-0}" -lt 4 ]; then
       docker exec kafka kafka-topics --bootstrap-server localhost:9092 \
         --alter --topic vehicle-data-topic --partitions 4
     fi
+    docker exec kafka kafka-configs --bootstrap-server localhost:9092 \
+      --entity-type topics --entity-name vehicle-data-topic \
+      --alter --add-config retention.ms=3600000,retention.bytes=1073741824,segment.ms=60000
     echo "[$(date -u)] vehicle-data-topic ready (partitions=$${CURRENT_PARTS:-created})"
     USERDATA
   )
