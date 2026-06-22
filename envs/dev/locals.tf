@@ -174,9 +174,20 @@ locals {
 
   internal_alb_services = local.ecs_rolling_services
 
+  service_metrics_rules = {
+    control = {
+      host     = "control-metrics.${local.app_domain_name}"
+      priority = 30
+    }
+    dispatch = {
+      host     = "dispatch-metrics.${local.app_domain_name}"
+      priority = 31
+    }
+  }
+
   service_metrics_hosts = {
-    control  = "control-metrics.${local.app_domain_name}"
-    dispatch = "dispatch-metrics.${local.app_domain_name}"
+    for key, config in local.service_metrics_rules : key => config.host
+    if contains(keys(local.internal_alb_services), key)
   }
 
   public_alb_listener_rules = {

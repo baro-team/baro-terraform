@@ -66,12 +66,12 @@ resource "aws_lb_listener_rule" "gateway_prometheus_metrics" {
 
 resource "aws_lb_listener_rule" "service_metrics" {
   for_each = {
-    for key, host in local.service_metrics_hosts : key => host
+    for key, config in local.service_metrics_rules : key => config
     if contains(keys(local.internal_alb_services), key)
   }
 
   listener_arn = aws_lb_listener.internal_https[0].arn
-  priority     = each.key == "control" ? 30 : 31
+  priority     = each.value.priority
 
   action {
     type             = "forward"
@@ -80,7 +80,7 @@ resource "aws_lb_listener_rule" "service_metrics" {
 
   condition {
     host_header {
-      values = [each.value]
+      values = [each.value.host]
     }
   }
 
