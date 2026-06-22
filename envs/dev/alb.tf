@@ -124,7 +124,7 @@ resource "terraform_data" "mobile_codedeploy_listener_bootstrap" {
   }
 
   provisioner "local-exec" {
-    command = "aws elbv2 modify-listener --listener-arn ${self.input.listener_arn} --default-actions Type=forward,TargetGroupArn=${self.input.target_group_arn}"
+    command = "aws elbv2 modify-listener --region ${var.aws_region} --listener-arn ${self.input.listener_arn} --default-actions Type=forward,TargetGroupArn=${self.input.target_group_arn}"
   }
 
   depends_on = [
