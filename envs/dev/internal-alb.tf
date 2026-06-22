@@ -64,6 +64,33 @@ resource "aws_lb_listener_rule" "gateway_prometheus_metrics" {
   }
 }
 
+resource "aws_lb_listener_rule" "service_metrics" {
+  for_each = {
+    for key, host in local.service_metrics_hosts : key => host
+    if contains(keys(local.internal_alb_services), key)
+  }
+
+  listener_arn = aws_lb_listener.internal_https[0].arn
+  priority     = each.key == "control" ? 30 : 31
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.internal_service[each.key].arn
+  }
+
+  condition {
+    host_header {
+      values = [each.value]
+    }
+  }
+
+  condition {
+    path_pattern {
+      values = ["/actuator/health", "/actuator/prometheus"]
+    }
+  }
+}
+
 resource "aws_lb_listener_rule" "internal_service" {
   for_each = local.internal_alb_services
 
