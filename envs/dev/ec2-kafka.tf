@@ -107,8 +107,8 @@ resource "aws_instance" "kafka" {
     mkdir -p /var/kafka-data
     mount /dev/nvme1n1 /var/kafka-data
     echo '/dev/nvme1n1 /var/kafka-data ext4 defaults,nofail 0 2' >> /etc/fstab
-    rm -rf /var/kafka-data/lost+found
-    chown 1000:1000 /var/kafka-data
+    mkdir -p /var/kafka-data/kafka
+    chown 1000:1000 /var/kafka-data/kafka
 
     aws ecr get-login-password --region ${var.aws_region} | \
       docker login --username AWS --password-stdin ${data.aws_ecr_repository.kafka.repository_url}
@@ -117,7 +117,7 @@ resource "aws_instance" "kafka" {
       --entrypoint /etc/confluent/docker/run \
       -p 9092:9092 \
       -p 9093:9093 \
-      -v /var/kafka-data:/var/kafka-data \
+      -v /var/kafka-data/kafka:/var/kafka-data \
       -e KAFKA_NODE_ID=1 \
       -e KAFKA_PROCESS_ROLES=broker,controller \
       -e KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093 \
@@ -133,7 +133,7 @@ resource "aws_instance" "kafka" {
       -e KAFKA_LOG_DIRS=/var/kafka-data \
       -e KAFKA_HEAP_OPTS="-Xms256M -Xmx512M" \
       -e KAFKA_LOG_RETENTION_MS=3600000 \
-      -e KAFKA_LOG_RETENTION_BYTES=1073741824 \
+      -e KAFKA_LOG_RETENTION_BYTES=268435456 \
       -e KAFKA_LOG_SEGMENT_MS=60000 \
       ${data.aws_ecr_repository.kafka.repository_url}:${var.image_tag}
 
@@ -149,7 +149,7 @@ resource "aws_instance" "kafka" {
       docker exec kafka kafka-topics --bootstrap-server localhost:9092 \
         --create --topic vehicle-data-topic --partitions 4 --replication-factor 1 \
         --config retention.ms=3600000 \
-        --config retention.bytes=1073741824 \
+        --config retention.bytes=268435456 \
         --config segment.ms=60000
     elif [ "$${CURRENT_PARTS:-0}" -lt 4 ]; then
       docker exec kafka kafka-topics --bootstrap-server localhost:9092 \
@@ -157,7 +157,7 @@ resource "aws_instance" "kafka" {
     fi
     docker exec kafka kafka-configs --bootstrap-server localhost:9092 \
       --entity-type topics --entity-name vehicle-data-topic \
-      --alter --add-config retention.ms=3600000,retention.bytes=1073741824,segment.ms=60000
+      --alter --add-config retention.ms=3600000,retention.bytes=268435456,segment.ms=60000
     echo "[$(date -u)] vehicle-data-topic ready (partitions=$${CURRENT_PARTS:-created})"
     USERDATA
   )
