@@ -74,3 +74,4 @@ output "github_actions_baro_edge_policy_arn" {
   description = "IAM 정책 ARN — GitHub Actions IAM 유저에 attach 필요 (baro-edge SSM 배포용)"
   value       = aws_iam_policy.github_actions_baro_edge.arn
 }
+
