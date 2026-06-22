@@ -118,7 +118,7 @@ resource "aws_ecs_task_definition" "service" {
 }
 
 resource "aws_ecs_service" "service" {
-  for_each = local.runtime_services
+  for_each = local.ecs_rolling_services
 
   name            = "${local.name_prefix}-${each.value.module}"
   cluster         = aws_ecs_cluster.this[0].id
@@ -159,5 +159,48 @@ resource "aws_ecs_service" "service" {
   depends_on = [
     aws_lb_listener.https,
     aws_lb_listener.internal_https
+  ]
+}
+
+resource "aws_ecs_service" "codedeploy" {
+  for_each = local.ecs_codedeploy_services
+
+  name            = "${local.name_prefix}-${each.value.module}"
+  cluster         = aws_ecs_cluster.this[0].id
+  task_definition = aws_ecs_task_definition.service[each.key].arn
+  desired_count   = lookup(var.service_desired_counts, each.key, var.service_desired_count)
+  launch_type     = "FARGATE"
+
+  enable_execute_command = true
+
+  deployment_controller {
+    type = "CODE_DEPLOY"
+  }
+
+  network_configuration {
+    subnets          = [for subnet in aws_subnet.private : subnet.id]
+    security_groups  = [aws_security_group.ecs_tasks.id]
+    assign_public_ip = false
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.service[each.key].arn
+    container_name   = each.value.module
+    container_port   = each.value.container_port
+  }
+
+  service_registries {
+    registry_arn = aws_service_discovery_service.service[each.key].arn
+  }
+
+  lifecycle {
+    ignore_changes = [
+      load_balancer,
+      task_definition,
+    ]
+  }
+
+  depends_on = [
+    terraform_data.mobile_codedeploy_listener_bootstrap,
   ]
 }

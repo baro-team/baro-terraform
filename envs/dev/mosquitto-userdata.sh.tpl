@@ -28,6 +28,14 @@ done
 
 docker network inspect baro-edge-net >/dev/null 2>&1 || docker network create baro-edge-net
 
+docker rm -f node-exporter || true
+docker run -d --name node-exporter --restart unless-stopped \
+  --pid host \
+  -p 9100:9100 \
+  -v /:/host:ro,rslave \
+  quay.io/prometheus/node-exporter:v1.8.2 \
+  --path.rootfs=/host
+
 echo "[$(date -u)] Fetching MQTT credentials"
 MQTT_SECRET=$(aws secretsmanager get-secret-value \
   --secret-id "${secret_arn}" \

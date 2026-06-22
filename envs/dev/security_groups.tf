@@ -69,6 +69,14 @@ resource "aws_security_group" "kafka" {
     cidr_blocks = [var.onprem_cidr, var.onprem_vm_cidr]
   }
 
+  ingress {
+    description = "Node exporter from monitoring via VPN"
+    from_port   = 9100
+    to_port     = 9100
+    protocol    = "tcp"
+    cidr_blocks = [var.onprem_cidr, var.onprem_vm_cidr]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -92,6 +100,14 @@ resource "aws_security_group" "mosquitto" {
     to_port         = 1883
     protocol        = "tcp"
     security_groups = [aws_security_group.ecs_tasks.id]
+  }
+
+  ingress {
+    description = "Node exporter from monitoring via VPN"
+    from_port   = 9100
+    to_port     = 9100
+    protocol    = "tcp"
+    cidr_blocks = [var.onprem_cidr, var.onprem_vm_cidr]
   }
 
   egress {
