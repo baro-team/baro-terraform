@@ -90,11 +90,6 @@ resource "aws_lb_listener" "https" {
     }
   }
 
-  lifecycle {
-    ignore_changes = [
-      default_action,
-    ]
-  }
 }
 
 resource "aws_lb_listener_rule" "mobile_codedeploy_bootstrap" {
