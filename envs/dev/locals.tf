@@ -33,14 +33,15 @@ locals {
       path_patterns     = ["/control", "/control/*"]
       health_check_path = "/actuator/health"
       extra_environment = {
-        BARO_ERROR_INCLUDE_DETAILS = "true"
-        MQTT_MODE                  = "local"
-        LOCAL_MQTT_HOST            = var.runtime_enabled ? aws_instance.mosquitto[0].private_ip : ""
-        LOCAL_MQTT_PORT            = "1883"
-        KAFKA_BOOTSTRAP_SERVERS    = "kafka.${aws_service_discovery_private_dns_namespace.this.name}:9092"
-        KAFKA_TOPIC                = "vehicle-data-topic"
-        DISPATCH_SERVICE_URL       = "http://dispatch-service.${aws_service_discovery_private_dns_namespace.this.name}:8082"
-        RELOCATION_SERVICE_URL     = "http://relocation-service.${aws_service_discovery_private_dns_namespace.this.name}:8083"
+        BARO_ERROR_INCLUDE_DETAILS   = "true"
+        CONTROL_MANAGEMENT_ENDPOINTS = "health,info,metrics,prometheus"
+        MQTT_MODE                    = "local"
+        LOCAL_MQTT_HOST              = var.runtime_enabled ? aws_instance.mosquitto[0].private_ip : ""
+        LOCAL_MQTT_PORT              = "1883"
+        KAFKA_BOOTSTRAP_SERVERS      = "kafka.${aws_service_discovery_private_dns_namespace.this.name}:9092"
+        KAFKA_TOPIC                  = "vehicle-data-topic"
+        DISPATCH_SERVICE_URL         = "http://dispatch-service.${aws_service_discovery_private_dns_namespace.this.name}:8082"
+        RELOCATION_SERVICE_URL       = "http://relocation-service.${aws_service_discovery_private_dns_namespace.this.name}:8083"
       }
       secret_names = []
     }
@@ -53,6 +54,7 @@ locals {
       health_check_path = "/actuator/health"
       extra_environment = {
         BARO_ERROR_INCLUDE_DETAILS               = "true"
+        DISPATCH_MANAGEMENT_ENDPOINTS            = "health,info,metrics,prometheus"
         SPRING_JPA_HIBERNATE_DDL_AUTO            = "update"
         SPRINGDOC_API_DOCS_PATH                  = "/dispatch/api-docs"
         SPRINGDOC_SWAGGER_UI_PATH                = "/dispatch/swagger-ui.html"
@@ -171,6 +173,22 @@ locals {
   }
 
   internal_alb_services = local.ecs_rolling_services
+
+  service_metrics_rules = {
+    control = {
+      host     = "control-metrics.${local.app_domain_name}"
+      priority = 30
+    }
+    dispatch = {
+      host     = "dispatch-metrics.${local.app_domain_name}"
+      priority = 31
+    }
+  }
+
+  service_metrics_hosts = {
+    for key, config in local.service_metrics_rules : key => config.host
+    if contains(keys(local.internal_alb_services), key)
+  }
 
   public_alb_listener_rules = {
     for rule in flatten([
