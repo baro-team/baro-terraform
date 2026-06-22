@@ -27,7 +27,7 @@ resource "aws_lb_listener" "internal_https" {
 }
 
 resource "aws_lb_target_group" "internal_service" {
-  for_each = local.runtime_services
+  for_each = local.internal_alb_services
 
   name        = "${local.name_prefix}-int-${each.key}"
   port        = each.value.container_port
@@ -47,7 +47,7 @@ resource "aws_lb_target_group" "internal_service" {
 }
 
 resource "aws_lb_listener_rule" "internal_service" {
-  for_each = local.runtime_services
+  for_each = local.internal_alb_services
 
   listener_arn = aws_lb_listener.internal_https[0].arn
   priority     = each.value.priority
