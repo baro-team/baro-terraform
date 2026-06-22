@@ -113,6 +113,13 @@ resource "aws_instance" "kafka" {
     aws ecr get-login-password --region ${var.aws_region} | \
       docker login --username AWS --password-stdin ${data.aws_ecr_repository.kafka.repository_url}
 
+    docker run -d --name node-exporter --restart unless-stopped \
+      --pid host \
+      -p 9100:9100 \
+      -v /:/host:ro,rslave \
+      quay.io/prometheus/node-exporter:v1.8.2 \
+      --path.rootfs=/host
+
     docker run -d --name kafka --restart unless-stopped \
       --entrypoint /etc/confluent/docker/run \
       -p 9092:9092 \
