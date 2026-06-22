@@ -14,7 +14,7 @@ locals {
       module            = "gateway-service"
       container_port    = 8080
       priority          = 90
-      path_patterns     = ["/user", "/user/*", "/dispatch", "/dispatch/*", "/control", "/control/*", "/relocation/assign"]
+      path_patterns     = ["/user", "/user/*", "/dispatch", "/dispatch/*", "/control", "/control/*", "/relocation", "/relocation/*"]
       health_check_path = "/actuator/health"
       extra_environment = {
         USER_SERVICE_URL       = "http://user-service.${aws_service_discovery_private_dns_namespace.this.name}:8084"
@@ -83,6 +83,8 @@ locals {
         BARO_ERROR_INCLUDE_DETAILS    = "true"
         SPRING_JPA_HIBERNATE_DDL_AUTO = "update"
         CONTROL_SERVICE_URL           = "http://control-service.${aws_service_discovery_private_dns_namespace.this.name}:8081"
+        SPRINGDOC_API_DOCS_PATH       = "/relocation/api-docs"
+        SPRINGDOC_SWAGGER_UI_PATH     = "/relocation/swagger-ui.html"
       }
       secret_names = [
         "RELOCATION_DB_URL",
