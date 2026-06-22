@@ -17,10 +17,11 @@ locals {
       path_patterns     = ["/user", "/user/*", "/dispatch", "/dispatch/*", "/control", "/control/*", "/relocation", "/relocation/*"]
       health_check_path = "/actuator/health"
       extra_environment = {
-        USER_SERVICE_URL       = "http://user-service.${aws_service_discovery_private_dns_namespace.this.name}:8084"
-        DISPATCH_SERVICE_URL   = "http://dispatch-service.${aws_service_discovery_private_dns_namespace.this.name}:8082"
-        CONTROL_SERVICE_URL    = "http://control-service.${aws_service_discovery_private_dns_namespace.this.name}:8081"
-        RELOCATION_SERVICE_URL = "http://relocation-service.${aws_service_discovery_private_dns_namespace.this.name}:8083"
+        GATEWAY_MANAGEMENT_ENDPOINTS = "health,info,metrics,prometheus"
+        USER_SERVICE_URL             = "http://user-service.${aws_service_discovery_private_dns_namespace.this.name}:8084"
+        DISPATCH_SERVICE_URL         = "http://dispatch-service.${aws_service_discovery_private_dns_namespace.this.name}:8082"
+        CONTROL_SERVICE_URL          = "http://control-service.${aws_service_discovery_private_dns_namespace.this.name}:8081"
+        RELOCATION_SERVICE_URL       = "http://relocation-service.${aws_service_discovery_private_dns_namespace.this.name}:8083"
       }
       secret_names = []
     }
