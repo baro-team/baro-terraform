@@ -119,12 +119,43 @@ resource "terraform_data" "mobile_codedeploy_listener_bootstrap" {
   count = contains(keys(local.ecs_codedeploy_services), "mobile") ? 1 : 0
 
   input = {
-    listener_arn     = aws_lb_listener.https[0].arn
-    target_group_arn = aws_lb_target_group.service["mobile"].arn
+    blue_target_group_arn  = aws_lb_target_group.service["mobile"].arn
+    green_target_group_arn = aws_lb_target_group.service_green["mobile"].arn
+    listener_arn           = aws_lb_listener.https[0].arn
   }
 
   provisioner "local-exec" {
-    command = "aws elbv2 modify-listener --region ${var.aws_region} --listener-arn ${self.input.listener_arn} --default-actions Type=forward,TargetGroupArn=${self.input.target_group_arn}"
+    command = <<-EOT
+      set -euo pipefail
+
+      target_count() {
+        aws elbv2 describe-target-health \
+          --region ${var.aws_region} \
+          --target-group-arn "$1" \
+          --query 'length(TargetHealthDescriptions[?TargetHealth.State==`healthy` || TargetHealth.State==`initial`])' \
+          --output text
+      }
+
+      current_target_group_arn="$(aws elbv2 describe-listeners \
+        --region ${var.aws_region} \
+        --listener-arns ${self.input.listener_arn} \
+        --query 'Listeners[0].DefaultActions[0].TargetGroupArn' \
+        --output text)"
+
+      if [ -n "$current_target_group_arn" ] && [ "$current_target_group_arn" != "None" ] && [ "$(target_count "$current_target_group_arn")" -gt 0 ]; then
+        exit 0
+      fi
+
+      next_target_group_arn="${self.input.blue_target_group_arn}"
+      if [ "$(target_count "${self.input.green_target_group_arn}")" -gt 0 ]; then
+        next_target_group_arn="${self.input.green_target_group_arn}"
+      fi
+
+      aws elbv2 modify-listener \
+        --region ${var.aws_region} \
+        --listener-arn ${self.input.listener_arn} \
+        --default-actions Type=forward,TargetGroupArn="$next_target_group_arn"
+    EOT
   }
 
   depends_on = [
