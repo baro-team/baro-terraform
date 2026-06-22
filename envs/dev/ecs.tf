@@ -201,6 +201,6 @@ resource "aws_ecs_service" "codedeploy" {
   }
 
   depends_on = [
-    aws_lb_listener.https
+    terraform_data.mobile_codedeploy_listener_bootstrap,
   ]
 }
