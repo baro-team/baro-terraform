@@ -55,6 +55,7 @@ resource "aws_ebs_volume" "kafka_data" {
 
   lifecycle {
     prevent_destroy = true
+    ignore_changes  = [availability_zone]
   }
 
   tags = merge(local.common_tags, {
