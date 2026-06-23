@@ -53,22 +53,23 @@ locals {
       path_patterns     = ["/dispatch", "/dispatch/*"]
       health_check_path = "/actuator/health"
       extra_environment = {
-        BARO_ERROR_INCLUDE_DETAILS               = "true"
-        DISPATCH_MANAGEMENT_ENDPOINTS            = "health,info,metrics,prometheus"
-        SPRING_JPA_HIBERNATE_DDL_AUTO            = "update"
-        SPRINGDOC_API_DOCS_PATH                  = "/dispatch/api-docs"
-        SPRINGDOC_SWAGGER_UI_PATH                = "/dispatch/swagger-ui.html"
-        REDIS_HOST                               = aws_elasticache_replication_group.redis.primary_endpoint_address
-        REDIS_PORT                               = "6379"
-        REDIS_SSL_ENABLED                        = "false"
-        DISPATCH_REDIS_IDLE_CAR_GEO_KEY          = "dispatch:cars:idle:geo"
-        DISPATCH_REDIS_IDLE_CAR_SEARCH_RADIUS_KM = "5.0"
-        DISPATCH_DB_URL                          = var.runtime_enabled ? "jdbc:postgresql://${aws_db_instance.postgres[0].address}:${aws_db_instance.postgres[0].port}/${local.effective_db_name}?currentSchema=dispatch_service" : ""
-        KAFKA_BOOTSTRAP_SERVERS                  = "kafka.${aws_service_discovery_private_dns_namespace.this.name}:9092"
-        KAFKA_DISPATCH_CONSUMER_GROUP_ID         = "dispatch-service"
-        KAFKA_VEHICLE_DATA_TOPIC                 = "vehicle-data-topic"
-        CONTROL_SERVICE_URL                      = "http://control-service.${aws_service_discovery_private_dns_namespace.this.name}:8081"
-        RELOCATION_SERVICE_URL                   = "http://relocation-service.${aws_service_discovery_private_dns_namespace.this.name}:8083"
+        BARO_ERROR_INCLUDE_DETAILS                 = "true"
+        DISPATCH_MANAGEMENT_ENDPOINTS              = "health,info,metrics,prometheus"
+        SPRING_JPA_HIBERNATE_DDL_AUTO              = "update"
+        SPRINGDOC_API_DOCS_PATH                    = "/dispatch/api-docs"
+        SPRINGDOC_SWAGGER_UI_PATH                  = "/dispatch/swagger-ui.html"
+        REDIS_HOST                                 = aws_elasticache_replication_group.redis.primary_endpoint_address
+        REDIS_PORT                                 = "6379"
+        REDIS_SSL_ENABLED                          = "false"
+        DISPATCH_REDIS_IDLE_CAR_GEO_KEY            = "dispatch:cars:idle:geo"
+        DISPATCH_REDIS_IDLE_CAR_SEARCH_RADIUS_KM   = "5.0"
+        DISPATCH_REDIS_STALENESS_THRESHOLD_SECONDS = "300"
+        KAFKA_DISPATCH_CONCURRENCY                 = "4"
+        DISPATCH_DB_URL                            = var.runtime_enabled ? "jdbc:postgresql://${aws_db_instance.postgres[0].address}:${aws_db_instance.postgres[0].port}/${local.effective_db_name}?currentSchema=dispatch_service" : ""
+        KAFKA_BOOTSTRAP_SERVERS                    = "kafka.${aws_service_discovery_private_dns_namespace.this.name}:9092"
+        KAFKA_DISPATCH_CONSUMER_GROUP_ID           = "dispatch-service"
+        KAFKA_VEHICLE_DATA_TOPIC                   = "vehicle-data-topic"
+        CONTROL_SERVICE_URL                        = "http://control-service.${aws_service_discovery_private_dns_namespace.this.name}:8081"
       }
       secret_names = [
         "KAKAO_MOBILITY_API_KEY",

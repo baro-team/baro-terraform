@@ -108,7 +108,7 @@ resource "aws_instance" "mosquitto" {
 
   ami                    = data.aws_ami.amazon_linux_2023.id
   instance_type          = "t3.micro"
-  subnet_id              = values(aws_subnet.private)[0].id
+  subnet_id              = aws_subnet.private["0"].id
   vpc_security_group_ids = [aws_security_group.mosquitto.id]
   iam_instance_profile   = aws_iam_instance_profile.mosquitto_ec2.name
 

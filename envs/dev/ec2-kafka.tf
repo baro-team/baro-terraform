@@ -48,7 +48,7 @@ resource "aws_iam_instance_profile" "kafka_ec2" {
 # ── EBS (인스턴스와 분리 관리 — 재생성 시 데이터 유지) ───────────────────────
 
 resource "aws_ebs_volume" "kafka_data" {
-  availability_zone = values(aws_subnet.private)[0].availability_zone
+  availability_zone = aws_subnet.private["0"].availability_zone
   size              = 20
   type              = "gp3"
   encrypted         = true
@@ -77,7 +77,7 @@ resource "aws_instance" "kafka" {
 
   ami                    = data.aws_ami.amazon_linux_2023.id
   instance_type          = "t3.small"
-  subnet_id              = values(aws_subnet.private)[0].id
+  subnet_id              = aws_subnet.private["0"].id
   vpc_security_group_ids = [aws_security_group.kafka.id]
   iam_instance_profile   = aws_iam_instance_profile.kafka_ec2.name
   private_ip             = "10.20.10.31"
@@ -145,8 +145,15 @@ resource "aws_instance" "kafka" {
       ${data.aws_ecr_repository.kafka.repository_url}:${var.image_tag}
 
     echo "[$(date -u)] Waiting for Kafka to be ready..."
+    MAX_RETRIES=30
+    RETRY_COUNT=0
     until docker exec kafka kafka-topics --bootstrap-server localhost:9092 --list >/dev/null 2>&1; do
+      if [ "$${RETRY_COUNT}" -eq "$${MAX_RETRIES}" ]; then
+        echo "[$(date -u)] Kafka failed to start after $((MAX_RETRIES * 5)) seconds. Exiting."
+        exit 1
+      fi
       sleep 5
+      RETRY_COUNT=$((RETRY_COUNT + 1))
     done
 
     echo "[$(date -u)] Ensuring vehicle-data-topic has 4 partitions..."
