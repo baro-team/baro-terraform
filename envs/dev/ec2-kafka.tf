@@ -48,14 +48,13 @@ resource "aws_iam_instance_profile" "kafka_ec2" {
 # ── EBS (인스턴스와 분리 관리 — 재생성 시 데이터 유지) ───────────────────────
 
 resource "aws_ebs_volume" "kafka_data" {
-  availability_zone = values(aws_subnet.private)[0].availability_zone
+  availability_zone = aws_subnet.private["0"].availability_zone
   size              = 20
   type              = "gp3"
   encrypted         = true
 
   lifecycle {
     prevent_destroy = true
-    ignore_changes  = [availability_zone]
   }
 
   tags = merge(local.common_tags, {
@@ -78,7 +77,7 @@ resource "aws_instance" "kafka" {
 
   ami                    = data.aws_ami.amazon_linux_2023.id
   instance_type          = "t3.small"
-  subnet_id              = values(aws_subnet.private)[0].id
+  subnet_id              = aws_subnet.private["0"].id
   vpc_security_group_ids = [aws_security_group.kafka.id]
   iam_instance_profile   = aws_iam_instance_profile.kafka_ec2.name
   private_ip             = "10.20.10.31"
