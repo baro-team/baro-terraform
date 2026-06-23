@@ -5,7 +5,7 @@ data "aws_route53_zone" "this" {
 
 resource "aws_acm_certificate" "alb" {
   domain_name               = local.app_domain_name
-  subject_alternative_names = concat(["internal-${local.app_domain_name}"], values(local.service_metrics_hosts))
+  subject_alternative_names = concat(["internal-${local.app_domain_name}"], [for _, config in local.service_metrics_rules : config.host])
   validation_method         = "DNS"
 
   lifecycle {
