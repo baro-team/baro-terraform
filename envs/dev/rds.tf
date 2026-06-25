@@ -145,7 +145,7 @@ resource "aws_ecs_task_definition" "db_init" {
           "-p ${aws_db_instance.postgres[0].port}",
           "-U ${aws_db_instance.postgres[0].username}",
           "-d ${local.effective_db_name}",
-          "-c \"CREATE SCHEMA IF NOT EXISTS user_service; CREATE SCHEMA IF NOT EXISTS dispatch_service; CREATE SCHEMA IF NOT EXISTS relocation_service; CREATE SCHEMA IF NOT EXISTS control_service;\""
+          "-c \"CREATE EXTENSION IF NOT EXISTS postgis; CREATE SCHEMA IF NOT EXISTS user_service; CREATE SCHEMA IF NOT EXISTS dispatch_service; CREATE SCHEMA IF NOT EXISTS relocation_service; CREATE SCHEMA IF NOT EXISTS control_service;\""
         ])
       ]
       environment = [
@@ -176,7 +176,7 @@ resource "aws_secretsmanager_secret_version" "relocation_db_url" {
   count = 1
 
   secret_id     = aws_secretsmanager_secret.service["relocation/RELOCATION_DB_URL"].id
-  secret_string = var.runtime_enabled ? "jdbc:postgresql://${aws_db_instance.postgres[0].address}:${aws_db_instance.postgres[0].port}/${local.effective_db_name}?currentSchema=relocation_service" : ""
+  secret_string = var.runtime_enabled ? "jdbc:postgresql://${aws_db_instance.postgres[0].address}:${aws_db_instance.postgres[0].port}/${local.effective_db_name}?currentSchema=relocation_service,public" : ""
 
   lifecycle {
     ignore_changes = [secret_string]
