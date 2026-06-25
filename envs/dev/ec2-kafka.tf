@@ -122,35 +122,39 @@ resource "aws_instance" "kafka" {
       --path.rootfs=/host
 
     mkdir -p /opt/kafka-jmx
-    printf '%s\n' \
-      'lowercaseOutputName: true' \
-      'lowercaseOutputLabelNames: true' \
-      'rules:' \
-      '  - pattern: '\''kafka.server<type=BrokerTopicMetrics, name=(BytesInPerSec|BytesOutPerSec|MessagesInPerSec), topic=(.+)><>Count'\''' \
-      '    name: kafka_server_brokertopicmetrics_$1_total' \
-      '    labels:' \
-      '      topic: "$2"' \
-      '    type: COUNTER' \
-      '  - pattern: '\''kafka.server<type=BrokerTopicMetrics, name=(BytesInPerSec|BytesOutPerSec|MessagesInPerSec)><>Count'\''' \
-      '    name: kafka_server_brokertopicmetrics_$1_total' \
-      '    labels:' \
-      '      topic: all' \
-      '    type: COUNTER' \
-      '  - pattern: '\''kafka.network<type=RequestMetrics, name=(RequestsPerSec|TotalTimeMs|RequestQueueTimeMs|ResponseQueueTimeMs|ResponseSendTimeMs), request=(Produce|FetchConsumer)><>Count'\''' \
-      '    name: kafka_network_requestmetrics_$1_total' \
-      '    labels:' \
-      '      request: "$2"' \
-      '    type: COUNTER' \
-      '  - pattern: '\''kafka.server<type=ReplicaManager, name=(UnderReplicatedPartitions|OfflineReplicaCount)><>Value'\''' \
-      '    name: kafka_server_replicamanager_$1' \
-      '    type: GAUGE' \
-      '  - pattern: '\''kafka.server<type=KafkaRequestHandlerPool, name=RequestHandlerAvgIdlePercent><>OneMinuteRate'\''' \
-      '    name: kafka_server_kafkarequesthandlerpool_requesthandleravgidlepercent' \
-      '    type: GAUGE' \
-      > /opt/kafka-jmx/kafka-jmx.yml
+    cat <<'KAFKA_JMX_CONFIG' > /opt/kafka-jmx/kafka-jmx.yml
+lowercaseOutputName: true
+lowercaseOutputLabelNames: true
+rules:
+  - pattern: 'kafka.server<type=BrokerTopicMetrics, name=(BytesInPerSec|BytesOutPerSec|MessagesInPerSec), topic=(.+)><>Count'
+    name: kafka_server_brokertopicmetrics_$1_total
+    labels:
+      topic: "$2"
+    type: COUNTER
+  - pattern: 'kafka.server<type=BrokerTopicMetrics, name=(BytesInPerSec|BytesOutPerSec|MessagesInPerSec)><>Count'
+    name: kafka_server_brokertopicmetrics_$1_total
+    labels:
+      topic: all
+    type: COUNTER
+  - pattern: 'kafka.network<type=RequestMetrics, name=(RequestsPerSec|TotalTimeMs|RequestQueueTimeMs|ResponseQueueTimeMs|ResponseSendTimeMs), request=(Produce|FetchConsumer)><>Count'
+    name: kafka_network_requestmetrics_$1_total
+    labels:
+      request: "$2"
+    type: COUNTER
+  - pattern: 'kafka.server<type=ReplicaManager, name=(UnderReplicatedPartitions|OfflineReplicaCount)><>Value'
+    name: kafka_server_replicamanager_$1
+    type: GAUGE
+  - pattern: 'kafka.server<type=KafkaRequestHandlerPool, name=RequestHandlerAvgIdlePercent><>OneMinuteRate'
+    name: kafka_server_kafkarequesthandlerpool_requesthandleravgidlepercent
+    type: GAUGE
+KAFKA_JMX_CONFIG
     curl --fail --location --retry 3 --retry-delay 5 \
       --output /opt/kafka-jmx/jmx_prometheus_javaagent.jar \
       https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/1.0.1/jmx_prometheus_javaagent-1.0.1.jar
+    curl --fail --location --retry 3 --retry-delay 5 \
+      --output /opt/kafka-jmx/jmx_prometheus_javaagent.jar.sha256 \
+      https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/1.0.1/jmx_prometheus_javaagent-1.0.1.jar.sha256
+    echo "$(cat /opt/kafka-jmx/jmx_prometheus_javaagent.jar.sha256)  /opt/kafka-jmx/jmx_prometheus_javaagent.jar" | sha256sum -c -
     chown -R 1000:1000 /opt/kafka-jmx
 
     docker run -d --name kafka --restart unless-stopped \
