@@ -75,12 +75,13 @@ resource "aws_volume_attachment" "kafka_data" {
 resource "aws_instance" "kafka" {
   count = var.runtime_enabled ? 1 : 0
 
-  ami                    = data.aws_ami.amazon_linux_2023.id
-  instance_type          = "t3.small"
-  subnet_id              = aws_subnet.private["0"].id
-  vpc_security_group_ids = [aws_security_group.kafka.id]
-  iam_instance_profile   = aws_iam_instance_profile.kafka_ec2.name
-  private_ip             = "10.20.10.31"
+  ami                         = data.aws_ami.amazon_linux_2023.id
+  instance_type               = "t3.small"
+  subnet_id                   = aws_subnet.private["0"].id
+  vpc_security_group_ids      = [aws_security_group.kafka.id]
+  iam_instance_profile        = aws_iam_instance_profile.kafka_ec2.name
+  private_ip                  = "10.20.10.31"
+  user_data_replace_on_change = true
 
   root_block_device {
     volume_size = 30
@@ -92,7 +93,7 @@ resource "aws_instance" "kafka" {
     #!/bin/bash
     set -e
     dnf update -y
-    dnf install -y docker
+    dnf install -y docker curl
     systemctl enable --now docker
 
     # aws_volume_attachment는 비동기로 붙으므로 디바이스가 준비될 때까지 대기
@@ -120,11 +121,45 @@ resource "aws_instance" "kafka" {
       quay.io/prometheus/node-exporter:v1.8.2 \
       --path.rootfs=/host
 
+    mkdir -p /opt/kafka-jmx
+    printf '%s\n' \
+      'lowercaseOutputName: true' \
+      'lowercaseOutputLabelNames: true' \
+      'rules:' \
+      '  - pattern: '\''kafka.server<type=BrokerTopicMetrics, name=(BytesInPerSec|BytesOutPerSec|MessagesInPerSec), topic=(.+)><>Count'\''' \
+      '    name: kafka_server_brokertopicmetrics_$1_total' \
+      '    labels:' \
+      '      topic: "$2"' \
+      '    type: COUNTER' \
+      '  - pattern: '\''kafka.server<type=BrokerTopicMetrics, name=(BytesInPerSec|BytesOutPerSec|MessagesInPerSec)><>Count'\''' \
+      '    name: kafka_server_brokertopicmetrics_$1_total' \
+      '    labels:' \
+      '      topic: all' \
+      '    type: COUNTER' \
+      '  - pattern: '\''kafka.network<type=RequestMetrics, name=(RequestsPerSec|TotalTimeMs|RequestQueueTimeMs|ResponseQueueTimeMs|ResponseSendTimeMs), request=(Produce|FetchConsumer)><>Count'\''' \
+      '    name: kafka_network_requestmetrics_$1_total' \
+      '    labels:' \
+      '      request: "$2"' \
+      '    type: COUNTER' \
+      '  - pattern: '\''kafka.server<type=ReplicaManager, name=(UnderReplicatedPartitions|OfflineReplicaCount)><>Value'\''' \
+      '    name: kafka_server_replicamanager_$1' \
+      '    type: GAUGE' \
+      '  - pattern: '\''kafka.server<type=KafkaRequestHandlerPool, name=RequestHandlerAvgIdlePercent><>OneMinuteRate'\''' \
+      '    name: kafka_server_kafkarequesthandlerpool_requesthandleravgidlepercent' \
+      '    type: GAUGE' \
+      > /opt/kafka-jmx/kafka-jmx.yml
+    curl --fail --location --retry 3 --retry-delay 5 \
+      --output /opt/kafka-jmx/jmx_prometheus_javaagent.jar \
+      https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/1.0.1/jmx_prometheus_javaagent-1.0.1.jar
+    chown -R 1000:1000 /opt/kafka-jmx
+
     docker run -d --name kafka --restart unless-stopped \
       --entrypoint /etc/confluent/docker/run \
       -p 9092:9092 \
       -p 9093:9093 \
+      -p 9404:9404 \
       -v /var/kafka-data/kafka:/var/kafka-data \
+      -v /opt/kafka-jmx:/opt/kafka-jmx:ro \
       -e KAFKA_NODE_ID=1 \
       -e KAFKA_PROCESS_ROLES=broker,controller \
       -e KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093 \
@@ -142,6 +177,7 @@ resource "aws_instance" "kafka" {
       -e KAFKA_LOG_RETENTION_MS=3600000 \
       -e KAFKA_LOG_RETENTION_BYTES=268435456 \
       -e KAFKA_LOG_SEGMENT_MS=60000 \
+      -e KAFKA_OPTS="-javaagent:/opt/kafka-jmx/jmx_prometheus_javaagent.jar=9404:/opt/kafka-jmx/kafka-jmx.yml" \
       ${data.aws_ecr_repository.kafka.repository_url}:${var.image_tag}
 
     echo "[$(date -u)] Waiting for Kafka to be ready..."
