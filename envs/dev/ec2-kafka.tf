@@ -75,12 +75,13 @@ resource "aws_volume_attachment" "kafka_data" {
 resource "aws_instance" "kafka" {
   count = var.runtime_enabled ? 1 : 0
 
-  ami                    = data.aws_ami.amazon_linux_2023.id
-  instance_type          = "t3.small"
-  subnet_id              = aws_subnet.private["0"].id
-  vpc_security_group_ids = [aws_security_group.kafka.id]
-  iam_instance_profile   = aws_iam_instance_profile.kafka_ec2.name
-  private_ip             = "10.20.10.31"
+  ami                         = data.aws_ami.amazon_linux_2023.id
+  instance_type               = "t3.small"
+  subnet_id                   = aws_subnet.private["0"].id
+  vpc_security_group_ids      = [aws_security_group.kafka.id]
+  iam_instance_profile        = aws_iam_instance_profile.kafka_ec2.name
+  private_ip                  = "10.20.10.31"
+  user_data_replace_on_change = true
 
   root_block_device {
     volume_size = 30
@@ -96,8 +97,6 @@ resource "aws_instance" "kafka" {
     image_tag     = var.image_tag
     dns_namespace = aws_service_discovery_private_dns_namespace.this.name
   }))
-
-  user_data_replace_on_change = true
 
   tags = merge(local.common_tags, {
     Name = "${local.name_prefix}-kafka"

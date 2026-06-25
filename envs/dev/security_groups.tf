@@ -77,6 +77,14 @@ resource "aws_security_group" "kafka" {
     cidr_blocks = [var.onprem_cidr, var.onprem_vm_cidr]
   }
 
+  ingress {
+    description = "Kafka JMX exporter from monitoring via VPN"
+    from_port   = 9404
+    to_port     = 9404
+    protocol    = "tcp"
+    cidr_blocks = [var.onprem_cidr, var.onprem_vm_cidr]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
