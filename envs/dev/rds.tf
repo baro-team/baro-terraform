@@ -145,7 +145,7 @@ resource "aws_ecs_task_definition" "db_init" {
           "-p ${aws_db_instance.postgres[0].port}",
           "-U ${aws_db_instance.postgres[0].username}",
           "-d ${local.effective_db_name}",
-          "-c \"CREATE SCHEMA IF NOT EXISTS user_service; CREATE SCHEMA IF NOT EXISTS dispatch_service; CREATE SCHEMA IF NOT EXISTS relocation_service; CREATE SCHEMA IF NOT EXISTS control_service;\""
+          "-c \"CREATE EXTENSION IF NOT EXISTS postgis; CREATE SCHEMA IF NOT EXISTS user_service; CREATE SCHEMA IF NOT EXISTS dispatch_service; CREATE SCHEMA IF NOT EXISTS relocation_service; CREATE SCHEMA IF NOT EXISTS control_service;\""
         ])
       ]
       environment = [
