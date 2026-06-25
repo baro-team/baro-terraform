@@ -42,8 +42,10 @@ if ! blkid /dev/nvme1n1; then
   mkfs.ext4 /dev/nvme1n1
 fi
 mkdir -p /var/kafka-data
-mount /dev/nvme1n1 /var/kafka-data
-echo '/dev/nvme1n1 /var/kafka-data ext4 defaults,nofail 0 2' >> /etc/fstab
+mount | grep -q '/var/kafka-data' || mount /dev/nvme1n1 /var/kafka-data
+if ! grep -q '/var/kafka-data' /etc/fstab; then
+  echo '/dev/nvme1n1 /var/kafka-data ext4 defaults,nofail 0 2' >> /etc/fstab
+fi
 mkdir -p /var/kafka-data/kafka
 chown 1000:1000 /var/kafka-data/kafka
 
@@ -139,13 +141,13 @@ done
 echo "[$(date -u)] Ensuring vehicle-data-topic has 4 partitions..."
 CURRENT_PARTS=$(docker exec kafka kafka-topics --bootstrap-server localhost:9092 \
   --describe --topic vehicle-data-topic 2>/dev/null | grep -c "Partition:" || true)
-if [ "${CURRENT_PARTS:-0}" -eq 0 ]; then
+if [ "$${CURRENT_PARTS:-0}" -eq 0 ]; then
   docker exec kafka kafka-topics --bootstrap-server localhost:9092 \
     --create --topic vehicle-data-topic --partitions 4 --replication-factor 1 \
     --config retention.ms=3600000 \
     --config retention.bytes=268435456 \
     --config segment.ms=60000
-elif [ "${CURRENT_PARTS:-0}" -lt 4 ]; then
+elif [ "$${CURRENT_PARTS:-0}" -lt 4 ]; then
   docker exec kafka kafka-topics --bootstrap-server localhost:9092 \
     --alter --topic vehicle-data-topic --partitions 4
 fi
@@ -153,5 +155,5 @@ docker exec kafka kafka-configs --bootstrap-server localhost:9092 \
   --entity-type topics --entity-name vehicle-data-topic \
   --alter --add-config retention.ms=3600000,retention.bytes=268435456,segment.ms=60000
 
-echo "[$(date -u)] vehicle-data-topic ready (partitions=${CURRENT_PARTS:-created})"
+echo "[$(date -u)] vehicle-data-topic ready (partitions=$${CURRENT_PARTS:-created})"
 echo "[$(date -u)] user-data DONE"
