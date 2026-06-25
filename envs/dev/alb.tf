@@ -125,7 +125,8 @@ resource "terraform_data" "mobile_codedeploy_listener_bootstrap" {
   }
 
   provisioner "local-exec" {
-    command = <<-EOT
+    interpreter = ["/bin/bash", "-c"]
+    command     = <<-EOT
       set -euo pipefail
 
       target_count() {
