@@ -176,7 +176,7 @@ resource "aws_secretsmanager_secret_version" "relocation_db_url" {
   count = 1
 
   secret_id     = aws_secretsmanager_secret.service["relocation/RELOCATION_DB_URL"].id
-  secret_string = var.runtime_enabled ? "jdbc:postgresql://${aws_db_instance.postgres[0].address}:${aws_db_instance.postgres[0].port}/${local.effective_db_name}?currentSchema=relocation_service" : ""
+  secret_string = var.runtime_enabled ? "jdbc:postgresql://${aws_db_instance.postgres[0].address}:${aws_db_instance.postgres[0].port}/${local.effective_db_name}?currentSchema=relocation_service,public" : ""
 
   lifecycle {
     ignore_changes = [secret_string]
