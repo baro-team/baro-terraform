@@ -4,7 +4,7 @@ exec > >(tee /var/log/user-data.log) 2>&1
 echo "[$(date -u)] user-data START"
 
 dnf update -y
-dnf install -y docker curl
+dnf install -y docker
 
 # dnf update 후 amazon-ssm-agent 유닛 파일이 사라질 수 있으므로 명시적 재설치
 dnf install -y amazon-ssm-agent
