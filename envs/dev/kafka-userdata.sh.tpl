@@ -92,10 +92,8 @@ KAFKA_JMX_CONFIG
 curl --fail --location --retry 3 --retry-delay 5 \
   --output /opt/kafka-jmx/jmx_prometheus_javaagent.jar \
   https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/1.0.1/jmx_prometheus_javaagent-1.0.1.jar
-curl --fail --location --retry 3 --retry-delay 5 \
-  --output /opt/kafka-jmx/jmx_prometheus_javaagent.jar.sha256 \
-  https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/1.0.1/jmx_prometheus_javaagent-1.0.1.jar.sha256
-echo "$(cat /opt/kafka-jmx/jmx_prometheus_javaagent.jar.sha256)  /opt/kafka-jmx/jmx_prometheus_javaagent.jar" | sha256sum -c -
+# SHA256 하드코딩 검증 (.sha256 URL이 Maven Central에 없어 404 반환하므로)
+echo "7d61f737fd661610ccc14aea79764faa1ea94a340cbc8f0029b3d2edea3d80c1  /opt/kafka-jmx/jmx_prometheus_javaagent.jar" | sha256sum -c -
 chown -R 1000:1000 /opt/kafka-jmx
 
 echo "[$(date -u)] Starting Kafka container"
