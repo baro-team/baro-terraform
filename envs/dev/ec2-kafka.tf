@@ -53,10 +53,6 @@ resource "aws_ebs_volume" "kafka_data" {
   type              = "gp3"
   encrypted         = true
 
-  lifecycle {
-    prevent_destroy = true
-  }
-
   tags = merge(local.common_tags, {
     Name = "${local.name_prefix}-kafka-data"
   })
