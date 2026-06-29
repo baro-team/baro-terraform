@@ -1,7 +1,7 @@
 # baro-terraform
 
 `baro-server`를 AWS dev 환경에 배포하기 위한 Terraform 저장소입니다.  
-현재 dev 환경은 ECS on Fargate, private RDS, Kafka EC2, ElastiCache Valkey를 중심으로 구성합니다.
+현재 dev 환경은 ECS on Fargate, public/internal ALB, Cloud Map, private RDS, Kafka EC2, Mosquitto EC2, ElastiCache Valkey를 중심으로 구성합니다.
 
 ## 목차
 
@@ -28,7 +28,7 @@
 
 ## Dev stack
 
-현재 dev 환경은 아래 리소스를 생성/관리합니다.
+현재 Terraform 코드는 dev 환경에 아래 리소스를 생성/관리하도록 선언합니다.
 
 - VPC with public/private subnets
 - NAT Gateway for private ECS tasks
@@ -41,6 +41,7 @@
 - Private RDS PostgreSQL instance
 - SSM-only bastion EC2 for private RDS access
 - Kafka EC2 with EBS persistence and Cloud Map DNS
+- Mosquitto EC2 with generated MQTT credentials
 - ElastiCache Valkey for vehicle GEO cache
 - CloudWatch log groups
 - Secrets Manager secret placeholders and RDS master secret
@@ -52,10 +53,10 @@
 
 | Key | Module | Port | Public route | Default enabled |
 | --- | --- | ---: | --- | --- |
-| `gateway` | `gateway-service` | 8080 | `/user`, `/user/*`, `/dispatch`, `/dispatch/*`, `/control`, `/control/*`, `/relocation/assign` | yes |
+| `gateway` | `gateway-service` | 8080 | `/user`, `/user/*`, `/dispatch`, `/dispatch/*`, `/control`, `/control/*`, `/relocation`, `/relocation/*` | yes |
 | `control` | `control-service` | 8081 | internal only | yes |
 | `dispatch` | `dispatch-service` | 8082 | internal only | yes |
-| `relocation` | `relocation-service` | 8083 | via Gateway: `/relocation/assign` | yes |
+| `relocation` | `relocation-service` | 8083 | via Gateway: `/relocation`, `/relocation/*` | yes |
 | `user` | `user-service` | 8084 | internal only | yes |
 | `admin` | `baro-admin` | 80 | `/admin`, `/admin/*` | yes |
 | `mobile` | `baro-mobile` | 80 | `/*` | yes |
@@ -122,16 +123,16 @@ Public ALB는 `/internal/*`, `*/internal/*` 요청을 403으로 차단합니다.
 
 주요 환경변수:
 
-- MQTT/AWS IoT 설정
+- `MQTT_MODE=local`
+- `LOCAL_MQTT_HOST=<mosquitto private IP>`
+- `LOCAL_MQTT_PORT=1883`
 - `KAFKA_BOOTSTRAP_SERVERS=kafka.baro.internal:9092`
 - `KAFKA_TOPIC=vehicle-data-topic`
 - `DISPATCH_SERVICE_URL=http://dispatch-service.baro.internal:8082`
 
-직접 채워야 하는 Secrets Manager 값:
+Terraform이 생성하고 주입하는 MQTT secret:
 
-- `baro-dev/control/IOT_CA_CERT`
-- `baro-dev/control/IOT_CERT`
-- `baro-dev/control/IOT_KEY`
+- `baro-dev/mosquitto/credentials`: `MQTT_USERNAME`, `MQTT_PASSWORD`
 
 ### dispatch-service
 
@@ -165,6 +166,7 @@ Public ALB는 `/internal/*`, `*/internal/*` 요청을 403으로 차단합니다.
 - `baro-dev/relocation/RELOCATION_DB_URL`
 - `baro-dev/relocation/RELOCATION_DB_USERNAME`
 - `baro-dev/relocation/RELOCATION_DB_PASSWORD`
+- `baro-dev/relocation/KAKAO_MOBILITY_API_KEY`
 - `baro-dev/relocation/INTERNAL_API_KEY` placeholder는 기존 리소스 유지를 위해 남기지만, 현재 ECS 주입에는 사용하지 않습니다.
 
 공유 secret 주입:
@@ -294,13 +296,12 @@ Terraform이 생성/관리하는 주요 secret:
 - `baro-dev/user/JWT_SECRET`
 - `baro-dev/dispatch/KAKAO_MOBILITY_API_KEY`
 - `baro-dev/dispatch/INTERNAL_API_KEY`
-- `baro-dev/control/IOT_CA_CERT`
-- `baro-dev/control/IOT_CERT`
-- `baro-dev/control/IOT_KEY`
 - `baro-dev/relocation/RELOCATION_DB_URL`
 - `baro-dev/relocation/RELOCATION_DB_USERNAME`
 - `baro-dev/relocation/RELOCATION_DB_PASSWORD`
+- `baro-dev/relocation/KAKAO_MOBILITY_API_KEY`
 - `baro-dev/relocation/INTERNAL_API_KEY`
+- `baro-dev/mobile/KAKAO_REST_API_KEY`
 
 AWS Console에서 secret 값을 넣으려면:
 
@@ -395,6 +396,8 @@ encrypt        = true
 
 State locking은 DynamoDB를 사용합니다.
 
+비용 절감을 위해 AWS dev 리소스를 모두 내린 상태라면 위 S3 bucket과 DynamoDB table도 없을 수 있습니다. 이 경우 `terraform init` 전에 remote state backend를 먼저 bootstrap/복구해야 합니다.
+
 ## 로컬에서 Terraform을 실행해야 할 때
 
 대부분의 작업은 GitHub Actions에서 처리합니다. 그래도 로컬 확인이 필요하면 아래처럼 실행합니다.
@@ -404,6 +407,8 @@ cd envs/dev
 AWS_PROFILE=baro-dev AWS_REGION=ap-northeast-2 terraform init -backend-config=backend.hcl.example
 AWS_PROFILE=baro-dev AWS_REGION=ap-northeast-2 terraform plan
 ```
+
+`backend.hcl.example`의 S3 bucket/DynamoDB table이 삭제된 상태에서는 init이 실패합니다. 재배포가 필요할 때만 backend를 다시 만들고 init을 실행합니다.
 
 로컬에서 `terraform apply`는 가급적 사용하지 않습니다.
 

@@ -14,7 +14,7 @@
   - `/user`, `/user/*`
   - `/dispatch`, `/dispatch/*`
   - `/control`, `/control/*`
-  - `/relocation/assign`
+  - `/relocation`, `/relocation/*`
 - Public ALB에 직접 연결되는 서비스는 `local.public_alb_services`로 제한한다.
   - 현재 대상: `gateway`, `admin`, `mobile`
 - `aws_lb_target_group.service`와 ECS service의 public `load_balancer` 블록은 `local.public_alb_services` 대상에만 생성/적용한다.
@@ -56,6 +56,7 @@
   - `git log --oneline -10`
 - 검증:
   - `cd envs/dev && terraform fmt -recursive && terraform validate`
+- 비용 절감을 위해 dev 리소스를 모두 내린 상태에서는 remote state S3 bucket/DynamoDB lock table이 없을 수 있으므로, 재배포 전 backend bootstrap/복구가 필요하다.
 - 배포 적용은 GitHub Actions가 main push/merge 후 수행한다.
 - Terraform apply 전, task definition이 참조하는 Secrets Manager 값이 실제로 채워져 있는지 확인한다.
 
